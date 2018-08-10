@@ -1,5 +1,5 @@
 # TiePy
-(Used for a 7 hour hackathon with much time wasted!)
+(Used for a 7 hour hackathon)
 Provides call back solutions for field variables and functions that need to be monitored by other objects
 
 ex:
