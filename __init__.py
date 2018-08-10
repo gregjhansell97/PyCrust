@@ -1,3 +1,3 @@
-import TiePy
+from TiePy import TiePy
 
-__all__ = ["TiePy"]
+__all__ = [TiePy]
