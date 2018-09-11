@@ -1,8 +1,8 @@
-from TiePy import TiePy
+from TiePy import TiePyify
 
 #this file uses an example
 
-class Greg(TiePy):
+class Greg:
     def __init__(self):
         self.x = {
             "test": 98
@@ -11,7 +11,7 @@ class Greg(TiePy):
     def k(self):
         print("hello world")
 
-class Gerg(TiePy):
+class Gerg:
     def __init__(self):
         self.x = 98
 
@@ -26,11 +26,10 @@ if __name__ == "__main__":
     # g.x = 75
     # id_ = g.subscribe(variable_changed)
     # g.x = 565600
-    g = Greg()
+    g = TiePyify(Greg())
     g.x["test"] = 98
     id_ = g.subscribe(variable_changed)
     print(id_)
     g.x["test"] = 70
-    g.k()
     g.__dict__["k"] = d
-    g.k()
+    print("Hello world")
