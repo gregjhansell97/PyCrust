@@ -17,9 +17,6 @@ def get_id():
 get_id.available = []
 get_id.id = -1
 
-#PyNoculars
-#TiePyrent??
-#obj must be indexable
 def get_keys(obj):
     '''
     Determines some way to loop through an object and returns the keys
@@ -44,16 +41,13 @@ def tie_pyify(obj, callbacks={}):
     '''
     tie_py_attributes = [
         "_TiePyWrapper__callbacks", 
-        "_TiePyWrapper__publish"]
+        "_TiePyWrapper__publish",
+        "_TiePyWrapper__chain"]
     class_attributes = ["__dict__"]
     indexable_attributes = ["__setitem__", "__delitem__", "__getitem__"]
 
     #prevents tie_pyify from double wrapping itself, transfers ownership
     if has_attributes(tie_py_attributes, obj):
-        #prevents recursive calls of items with the same callbacks (references to references)
-        if obj._TiePyWrapper__callbacks is callbacks:
-            return
-
         obj._TiePyWrapper__publish = False
         obj._TiePyWrapper__callbacks = {**obj._TiePyWrapper__callbacks, **callbacks}
         if has_attributes(indexable_attributes, obj):
@@ -93,7 +87,7 @@ def tie_pyify(obj, callbacks={}):
                 #do not call super constructor, copying all values manually
                 self.__callbacks = callbacks
                 self.__publish = False #used to block callbacks when needed
-                 
+                self.__chain = []
                 #iterates through items of indexable object
                 for key in get_keys(obj):
                     self.__setitem__(
@@ -101,7 +95,12 @@ def tie_pyify(obj, callbacks={}):
                         obj[key])
 
                 self.__publish = True
-
+            def __getitem__(self, key):
+                item = class_.__getitem__(self, key)
+                if has_attributes(tie_py_attributes, item) and self not in item.__chain: 
+                    item.__chain.append(self)
+                return item
+                
             def __setitem__(self, key, value):
                 '''
                 wrapper for set item class, invokes callbacks if needed
@@ -112,32 +111,37 @@ def tie_pyify(obj, callbacks={}):
                 '''
                 #gotta be a way to try and access a key if there otherwise none
                 #in a structure blind way
-                if key in get_keys(self):
-                    if self[key] is value:
-                        return #nothing has changed
+                if value not in self.__chain and value is not self:
+                    if key in get_keys(self):
+                        if self[key] is value:
+                            return value
 
-                callbacks = {} #copy of callbacks generated for child class
-                for id_ in self.__callbacks.keys():
-                    owner, keys, cb = self.__callbacks[id_]
-                    callbacks[id_] = (owner, keys + [key], cb)
-
-                value = tie_pyify(
-                    value,
-                    callbacks = callbacks)
-
-                r =  class_.__setitem__(
+                    callbacks = {} #copy of callbacks generated for child class
+                    for id_ in self.__callbacks.keys():
+                        owner, keys, cb = self.__callbacks[id_]
+                        callbacks[id_] = (owner, keys + [key], cb)
+                 
+                    value = tie_pyify(
+                        value,
+                        callbacks = callbacks)
+                r = class_.__setitem__(
                     self, 
                     key,
                     value)
-                if self.__publish:
-                    for owner, keys, callback in self.__callbacks.values():
-                        callback(
-                            owner, 
-                            keys + [key], 
-                            value)
-                
-                return r
 
+                self.__run_callbacks(value, key)
+             
+                return r
+         
+            def __run_callbacks(self, value, key):
+                if not self.__publish:
+                    return
+                for owner, keys, callback in self.__callbacks.values():
+                    callback(
+                        owner,
+                        keys + [key],
+                        value)
+            
             def __delitem__(self, key):
                 '''
                 wrapper for the delete items, unsubscribes common ids
@@ -146,14 +150,13 @@ def tie_pyify(obj, callbacks={}):
                 Args:
                     key: the key that is being deleted
                 '''
-                ids = self.__callbacks.keys()
-                for key in get_keys(self):
-                    if has_attributes(tie_py_attributes, self[key]):
-                        self[key].__unsubscribe(ids)
-
+                if has_attributes(tie_py_attributes, self[key]):
+                    ids = list(self.__callbacks.keys())
+                    self[key].__unsubscribe(ids)
+                
                 return class_.__delitem__(self, key)
 
-            def __subscribe(self,id_, owner, keys, callback):
+            def __subscribe(self, id_, owner, keys, callback):
                 '''
                 gets drivin by the subscribe operator
 
@@ -190,7 +193,11 @@ def tie_pyify(obj, callbacks={}):
             def __unsubscribe(self, ids=[]):
                 for id_ in ids:
                    if id_ in self.__callbacks:
+                       owner, _, _ = self.__callbacks[id_]
+                       if owner is self and id_ not in get_id.available:
+                           get_id.available.append(id_)
                        del self.__callbacks[id_]
+
                 for key in get_keys(self):
                     if has_attributes(tie_py_attributes, self[key]):
                         self[key].__unsubscribe(ids)
@@ -202,10 +209,8 @@ def tie_pyify(obj, callbacks={}):
                 Args:
                     id_: the id of the subscriber
                 '''
-                self.__unsubscribe([id_])
-                if id_ not in get_id.available:
-                    #this may interfere with partial subscriptions
-                    get_id.available.append(id_)
+                if id_ in self.__callbacks:
+                    self.__unsubscribe([id_])
 
         return TiePyWrapper(
             obj, 

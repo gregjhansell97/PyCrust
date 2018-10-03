@@ -82,7 +82,6 @@ class TestTiePySimpleDicts(unittest.TestCase):
         self.callback.obj = x
         sub_count = 10 #must be larger than 3
         ids = [x.subscribe(self.callback) for _ in range(sub_count)]
-        print(ids) 
         x["A"] = 0
         self.assertEqual(self.callback.count, sub_count)
         x["B"] = 4
@@ -176,36 +175,27 @@ class TestTiePySimpleDicts(unittest.TestCase):
         x["E"]["F"] = "12"
         self.assertEqual(self.callback.count, 7)
 
-    def _test_multi_layered_delete_operation(self):
+    def test_multi_layered_delete_operation(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
         x = tie_pyify(x, {})
         self.callback.obj = x
         s_id = x.subscribe(self.callback)
 
         del x["A"]["B"]
-        self.assertEqual(self.callback.count, 1)
+        self.assertEqual(self.callback.count, 0)
         self.assertTrue("B" not in x["A"])
-        
-        m = x["A"]
-        del m["J"]
-        self.assertEqual(self.callback.count, 2)
-        
-        y = m["C"]
-        del y["D"]
-        self.assertEqual(self.callback.count, 3)
+	
+        x["A"]["C"]["D"] = 98
+        self.assertEqual(self.callback.count, 1)
 
-        del m["C"]
-        self.assertEqual(self.callback.count, 4)
-        y["G"] = 42
-        y["H"] = 98
-        self.assertEqual(self.callback.count, 4)
+        b = x["A"]
+        del x["A"]
+        b["D"] = 97
+        self.assertEqual(self.callback.count, 1)
 
-        y.subscribe(self.callback)
-        self.callback.obj = y
-        y["M"] = 95
-        self.assertEqual(self.callback.count, 5)
+        x.unsubscribe(s_id)
 
-    def _test_in_object_dict_moves(self):
+    def test_in_object_dict_moves(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
         x = tie_pyify(x, {})
         self.callback.obj = x
@@ -214,9 +204,33 @@ class TestTiePySimpleDicts(unittest.TestCase):
         m = x["A"]["C"]
         x["H"] = 98
         self.assertEqual(self.callback.count, 1)
-        
-        x["D"] = m
-         
+	
+
+        x["H"] = m
+        self.assertEqual(self.callback.count, 2)
+        x["H"]["D"] = 99
+        self.assertEqual(self.callback.count, 3)
+	
+        x["A"]["C"] = 45
+        self.assertEqual(self.callback.count, 4)
+
+        x["H"]["D"] = 73
+        self.assertEqual(self.callback.count, 5)
+
+        x["N"] = 42
+        self.assertEqual(self.callback.count, 6)
+
+	#challenge problem
+        x["N"] = x
+        self.assertEqual(self.callback.count, 7)
+        x["N"]["N"]["N"]["N"] = 10
+        self.assertEqual(self.callback.count, 8)
+
+        #even more challenging
+        x["A"]["B"] = x
+        self.assertEqual(self.callback.count, 9)
+        x["A"]["B"]["A"]["B"] = 29
+        self.assertEqual(self.callback.count, 10)
 
         
 
