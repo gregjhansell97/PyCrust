@@ -257,11 +257,11 @@ class TestTiePyDicts(unittest.TestCase):
         m_id = m.subscribe(callback_1)
         m["L"] = {"T": 98}
         self.assertEqual(callback_1.count, 1)
-        
+
         x["A"]["J"] = m
         self.assertEqual(self.callback.count, 1)
         self.assertEqual(callback_1.count, 1)
-        self.assertTrue(x["A"]["J"] == m)        
+        self.assertTrue(x["A"]["J"] == m)
 
         m["L"]["T"] = 99
         self.assertEqual(self.callback.count, 2)

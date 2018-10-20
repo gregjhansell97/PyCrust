@@ -140,13 +140,6 @@ def tie_pyify(obj, callbacks={}):
                 return r
 
             def __run_callbacks(self, value, key):
-                '''
-                given a value and key, invokes all the callbacks accordingly
-
-                Args:
-                    value: the value changed to
-                    key: the key for that value
-                '''
                 if not self.__publish:
                     return
                 for owner, keys, callback in self.__callbacks.values():
@@ -155,7 +148,7 @@ def tie_pyify(obj, callbacks={}):
                         keys + [key],
                         value)
 
-            def __delitem__(self, key): #need to implement
+            def __delitem__(self, key):
                 '''
                 wrapper for the delete items, unsubscribes common ids
                 from it
@@ -166,7 +159,6 @@ def tie_pyify(obj, callbacks={}):
                 if has_attributes(tie_py_attributes, self[key]):
                     ids = list(self.__callbacks.keys())
                     self[key].__unsubscribe(ids)
-
                 return class_.__delitem__(self, key)
 
             def __subscribe(self, id_, owner, keys, callback):
