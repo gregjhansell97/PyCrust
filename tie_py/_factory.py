@@ -1,5 +1,5 @@
 import tie_py._dict
-#import tie_py._list WOAH! let's not get too far ahead of ourselves
+import tie_py._list
 #import tie_py._set
 from tie_py._base import TiePyBase
 
@@ -13,7 +13,7 @@ def tie_pyify(obj, callbacks={}):
         return obj #same object, different dict
     elif issubclass(obj.__class__, dict):
         return tie_py._dict.tie_pyify(obj, callbacks)
-    elif False:# issubclass(obj.__class__, list):
+    elif issubclass(obj.__class__, list):
         return tie_py._list.tie_pyify(obj, callbacks)
     elif False: #issubclass(obj.__class__, set):
         return tie_py._set.tie_pyify(obj, callbacks)

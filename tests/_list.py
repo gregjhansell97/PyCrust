@@ -1,7 +1,7 @@
 import unittest
 from tie_py import tie_pyify
 
-class TestTiePyDicts(unittest.TestCase):
+class TestTiePyList(unittest.TestCase):
     '''
     runs tests on:
 
@@ -13,14 +13,15 @@ class TestTiePyDicts(unittest.TestCase):
         Called before every test function, must set static obj
         in the test function itself
         '''
-        def callback(obj, keys, value):
+        def callback(obj, indexes, value):
             self.assertTrue(callback.obj is obj)
             v = obj
-            for k in keys:
-                if k in v:
-                    v = v[k]
-                else:
-                    v = None
+            try:
+                for i in indexes:
+                    v = v[i]
+            except Exception as e:
+                self.assertTrue(False)
+            
             self.assertTrue(value is v)
             self.callback.count += 1
 
@@ -33,25 +34,27 @@ class TestTiePyDicts(unittest.TestCase):
         Testing one subscriber on a dictionary that's already
         been made before hand (no new keys)
         '''
-        x = {"A": 1, "B": 2, "C": 3}
+        x = [1, 2, 3]
         x = tie_pyify(x, {})
         self.callback.obj = x
         s_id = x.subscribe(self.callback)
 
-        x["A"] = 0
+        x[0] = 1
+        self.assertEqual(self.callback.count, 0)
+        x[0] = 0
         self.assertEqual(self.callback.count, 1)
-        x["B"] = 4
+        x[1] = 4
         self.assertEqual(self.callback.count, 2)
-        x["C"] = -100
+        x[2] = -100
         self.assertEqual(self.callback.count, 3)
-        x["A"] += 1
+        x[0] += 1
         self.assertEqual(self.callback.count, 4)
         #unsubscribing
         x.unsubscribe(s_id)
         x["B"] = 25
         self.assertEqual(self.callback.count, 4)
 
-    def test_one_layered_initially_empty(self):
+    def _test_one_layered_initially_empty(self):
         '''
         Testing one subscriber on a dictionary that's empty
         and new items will be added to it
@@ -74,7 +77,7 @@ class TestTiePyDicts(unittest.TestCase):
         x["D"] = 98
         self.assertEqual(self.callback.count, 4)
 
-    def test_one_layered_with_multiple_subscribers(self):
+    def _test_one_layered_with_multiple_subscribers(self):
         '''
         Testing multiple subscribers on a dictionary
         '''
@@ -105,7 +108,7 @@ class TestTiePyDicts(unittest.TestCase):
             self.callback.count,
             4*sub_count + (sub_count - 3))
 
-    def test_one_layered_delete_operation(self):
+    def _test_one_layered_delete_operation(self):
         '''
         Testing delete operation to ensure the appropriate item gets published
 
@@ -126,7 +129,7 @@ class TestTiePyDicts(unittest.TestCase):
         del x["C"]
         self.assertEqual(self.callback.count, 0)
 
-    def test_multi_layered_general(self):
+    def _test_multi_layered_general(self):
         '''
         Testing a multilevel dictionary
         '''
@@ -175,7 +178,7 @@ class TestTiePyDicts(unittest.TestCase):
         x["E"]["F"] = "12"
         self.assertEqual(self.callback.count, 7)
 
-    def test_multi_layered_delete_operation(self):
+    def _test_multi_layered_delete_operation(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
         x = tie_pyify(x, {})
         self.callback.obj = x
@@ -195,7 +198,7 @@ class TestTiePyDicts(unittest.TestCase):
 
         x.unsubscribe(s_id)
 
-    def test_in_object_dict_moves(self):
+    def _test_in_object_dict_moves(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
         x = tie_pyify(x, {})
         self.callback.obj = x
@@ -232,7 +235,7 @@ class TestTiePyDicts(unittest.TestCase):
         x["A"]["B"]["A"]["B"] = 29
         self.assertEqual(self.callback.count, 10)
 
-    def test_in_object_dict_moves_with_multiple_callbacks(self):
+    def _test_in_object_dict_moves_with_multiple_callbacks(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
         x = tie_pyify(x, {})
         self.callback.obj = x
@@ -266,3 +269,4 @@ class TestTiePyDicts(unittest.TestCase):
         m["L"]["T"] = 99
         self.assertEqual(self.callback.count, 2)
         self.assertEqual(callback_1.count, 2)
+

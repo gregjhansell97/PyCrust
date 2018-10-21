@@ -42,13 +42,13 @@ TODO: need to verify that the lower down keys are transmitted with the callbacks
         for k, v in callbacks.items():
             obj, keys, callback = v
             self._callbacks[k] = (obj, keys + key, callback)
- 
+
         for k, v in self._get_items():
             if issubclass(v.__class__, TiePyBase):
                 v._extend_callbacks(callbacks, key + [k])
         self._publish = True
 
-    def _run_callbacks(self, value, key):
+    def _run_callbacks(self, value, key):#we should have the function called too
         '''
         given a value and key, invokes all the callbacks accordingly
 
@@ -154,4 +154,3 @@ TODO: need to verify that the lower down keys are transmitted with the callbacks
             iterable key value pair (k, v)
         '''
         return zip_longest(self._get_keys(), self._get_values())
-        
