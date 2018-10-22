@@ -1,4 +1,5 @@
 from itertools import zip_longest
+from tie_py._enums import Action
 
 def get_id():
     if len(get_id.available) > 0:
@@ -12,13 +13,13 @@ get_id.id = -1
 class TiePyBase:
     '''
     the base class for all other tiepy decorators(design pattern not @). The
-    decorator monitors changes in value/key(decided in child class). An value's
+    decorator monitors changes in value/key(decided in child class). A value's
     value is also monitored (recursive problem here)
 
     Attributes:
         _callbacks (dict): the key is the id generated and the value is a tuple
-            of: (owner, keys, callback) where the owner is the original object
-            for the callback, key is the keys/attr needed to get to the current
+            of: (owner, path, callback) where the owner is the original object
+            for the callback, path is the keys/attr needed to get to the current
             value and callback is the function called
         _publish (bool): should the callback be called or not, if false the
             callback will not be invoked (used for internal changes)
@@ -32,75 +33,81 @@ class TiePyBase:
         self._copy(obj)
         self._publish = True
 
-    def _extend_callbacks(self, callbacks, key=[]):
+    def _extend_callbacks(self, callbacks, ext_path=[]):
         '''
-        if one ore more callback arrays are added to the system,
-TODO: need to verify that the lower down keys are transmitted with the callbacks
+        if one ore more callback arrays are added to the system
+
+        Args:
+            callbacks ([(owner, path, callback)]): list of callbacks being added
+            ext_path (list): the additional path that needs to be appended to
+                the current callbacks path
         '''
         self._publish = False
         #ensures the correct chain of keys for each callback
-        for k, v in callbacks.items():
-            obj, keys, callback = v
-            self._callbacks[k] = (obj, keys + key, callback)
+        for id_, v in callbacks.items():
+            owner, path, callback = v
+            self._callbacks[id_] = (owner, path + ext_path, callback)
 
-        for k, v in self._get_items():
+        for s, v in self._get_items():
             if issubclass(v.__class__, TiePyBase):
-                v._extend_callbacks(callbacks, key + [k])
+                v._extend_callbacks(callbacks, ext_path + [s])
         self._publish = True
 
-    def _run_callbacks(self, value, key):#we should have the function called too
+    def _run_callbacks(self, step, value, action):#we should have the function called too
         '''
-        given a value and key, invokes all the callbacks accordingly
+        executes all callbacks passing along the arguments above
 
         Args:
-            value: the value changed to
-            key: the key for that value
+            step (obj): the step in the current path from owner to value
+            value (obj): the new value (None if deleted)
+            action (Action Enum): what action was done to get to that value
         '''
         if not self._publish:
             return
-        for owner, keys, callback in self._callbacks.values():
-            callback(
-                owner,
-                keys + [key],
-                value)
 
-    def _subscribe(self, id_, owner, prior_keys, callback):
+        for owner, path, callback in self._callbacks.values():
+            callback(
+                owner=owner,
+                path=path + [step],
+                value=value,
+                action=action
+                )
+
+    def _subscribe(self, id_, owner, prior_path, callback):
         '''
         gets drivin by the subscribe operator
 
         Args:
             id_(int): the id of the callback
-            owner: the originator of the subscription
-            keys: the path from the owner to the value
+            owner (obj): the originator of the subscription
+            prior_path([obj]): the path from the owner to the value
             callback(function): gets called on variable change
         '''
-        self._callbacks[id_] = (owner, prior_keys, callback)
-        values = self._get_values()
-        keys = self._get_keys()
-        for k, v in self._get_items():
+        self._callbacks[id_] = (owner, prior_path, callback)
+        for s, v in self._get_items():
             if issubclass(v.__class__, TiePyBase):
-                v._subscribe(id_, owner, prior_keys + [k], callback)
+                v._subscribe(id_, owner, prior_path + [s], callback)
 
     def subscribe(self, callback):
         '''
         on variable change, callback submitted is called, acting as a
-        recursive driver for __subscribe
+        recursive driver for _subscribe
 
         Args:
-            callback (function(name, prior, current)): The function that gets
-                called when a field variable changes
+            callback (function(owner, path, value, action, prior)): The function
+                that gets called when a member variable changes
 
         Returns:
             int: the id of the subscriber
         '''
         id_ = get_id()
-        self._subscribe(id_, self, [], callback) #self og owner
+        self._subscribe(id_, self, [], callback) #self is the og owner
         return id_
 
     def _unsubscribe(self, ids=[]):
         '''
-        a list of id's to unsubscribe the object from (remove callbacks), intended
-        for internal use but if you're feeling confident try it out!
+        a list of id's to unsubscribe the object from (remove callbacks),
+        intended for internal use but if you're feeling confident try it out!
 
         Args:
             ids ([int]): the list of ids that are being unsubscribed from
@@ -118,7 +125,7 @@ TODO: need to verify that the lower down keys are transmitted with the callbacks
     def unsubscribe(self, id_):
         '''
         removes the callback function with that id_ from the subscription list
-        though: revise it down to self._unsubscribe([id_]) (no for loop?)
+
         Args:
             id_: the id of the subscriber
         '''
@@ -134,10 +141,11 @@ TODO: need to verify that the lower down keys are transmitted with the callbacks
         '''
         pass
 
-    def _get_keys(self):
+    def _get_steps(self):
         '''
         Returns:
-           [obj]: the keys for that tie_py object
+           [obj]: the step needed to get from one above to that tie_py object,
+               keys in the case of a dictionary
         '''
         pass
 
@@ -151,6 +159,6 @@ TODO: need to verify that the lower down keys are transmitted with the callbacks
     def _get_items(self):
         '''
         Returns:
-            iterable key value pair (k, v)
+            iterable step value pair (s, v)
         '''
-        return zip_longest(self._get_keys(), self._get_values())
+        return zip_longest(self._get_steps(), self._get_values())

@@ -29,7 +29,7 @@ class TestTiePyList(unittest.TestCase):
         self.callback.count = 0 #called 0 times
         self.callback = callback
 
-    def test_one_layered_pre_initialized(self):
+    def _test_one_layered_pre_initialized(self):
         '''
         Testing one subscriber on a dictionary that's already
         been made before hand (no new keys)

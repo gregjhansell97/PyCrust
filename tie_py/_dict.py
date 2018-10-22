@@ -1,5 +1,6 @@
 import tie_py._factory
 from tie_py._base import TiePyBase
+from tie_py._enums import Action
 
 def tie_pyify(obj, callbacks={}):
     class_ = obj.__class__
@@ -15,7 +16,7 @@ def tie_pyify(obj, callbacks={}):
         def _copy(self, obj):
             for key, value in obj.items():
                 self.__setitem__(key, value)
-        def _get_keys(self):
+        def _get_steps(self):
             return self.keys()
         def _get_values(self):
             return self.values()
@@ -60,7 +61,7 @@ def tie_pyify(obj, callbacks={}):
                 self,
                 key,
                 value)
-            self._run_callbacks(value, key)
+            self._run_callbacks(key, value, Action.SET)
 
             return r
 
@@ -73,9 +74,13 @@ def tie_pyify(obj, callbacks={}):
                 key: the key that is being deleted
             '''
             if issubclass(self[key].__class__, TiePyBase):
+                #why do we need to cast this to a list? .keys should be iterable
                 ids = list(self._callbacks.keys())
                 self[key]._unsubscribe(ids)
 
-            return class_.__delitem__(self, key)
+            r = class_.__delitem__(self, key)
+            self._run_callbacks(key, None, Action.DELETE)
+
+            return r
 
     return TiePyDict(obj, callbacks=callbacks)

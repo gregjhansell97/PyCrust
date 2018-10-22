@@ -22,11 +22,10 @@ tie_pyified, ensuring that a member variables' member variables are also
 tie_pyified.
 
 ### Callback
-Callbacks have five named parameters:
+Callbacks have four named parameters:
 1. owner (obj): The master object that owns the member variable.
 2. path (list): Path from the owner to the value.
-3. old (obj) The value before change was applied.
-4. new (obj) The value after change was applied (None if deleted).
+4. value (obj) The value after change was applied (None if deleted).
 5. action (enum) The action performed (ex: deletion, setting, append). Current
 enums defined are: Set, Delete, Append, Extend
 
@@ -43,7 +42,7 @@ class Simple(Monitor):
         Monitor.__init__(self)
         self.x = 10
 
-def callback_foo(owner, path, old, new, action):
+def callback_foo(owner, path, value, action):
     pass
 
 obj = Simple()
