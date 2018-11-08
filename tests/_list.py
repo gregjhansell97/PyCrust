@@ -1,5 +1,9 @@
 import unittest
+
+from collections import defaultdict
 from tie_py import tie_pyify
+from tie_py._enums import Action
+
 
 class TestTiePyList(unittest.TestCase):
     '''
@@ -13,69 +17,141 @@ class TestTiePyList(unittest.TestCase):
         Called before every test function, must set static obj
         in the test function itself
         '''
-        def callback(obj, indexes, value):
-            self.assertTrue(callback.obj is obj)
-            v = obj
+        def callback(owner, path, value, action):
+            self.assertTrue(callback.owner is owner)
+            v = owner
+            end_early = (action == Action.EXTEND or action == Action.CLEAR)
             try:
-                for i in indexes:
-                    v = v[i]
+                for i in range(len(path) - end_early):
+                    step = path[i]
+                    v = v[step]
             except Exception as e:
                 self.assertTrue(False)
-            
-            self.assertTrue(value is v)
-            self.callback.count += 1
+            if action == Action.SET:
+                self.assertTrue(value is v)
+            if action == Action.EXTEND:
+                self.assertEqual(v[path[-1]:], value) 
+            if action == Action.CLEAR:
+                self.assertEqual(len(v), 0)
+                self.assertEqual(value, [])
+            self.callback.count[action] += 1
 
         self.callback = callback
-        self.callback.count = 0 #called 0 times
-        self.callback = callback
-
-    def _test_one_layered_pre_initialized(self):
+        self.callback.count = defaultdict(lambda: 0)
+    def assert_count(self, action, expected_count):
         '''
-        Testing one subscriber on a dictionary that's already
-        been made before hand (no new keys)
+        asserts the count is correct for a given action
+        '''
+        self.assertEqual(self.callback.count[action], expected_count)
+
+    def test_one_layered_set(self):
+        '''
+        Testing one subscriber on a list that's already
+        been made before hand
         '''
         x = [1, 2, 3]
         x = tie_pyify(x, {})
-        self.callback.obj = x
+        self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
         x[0] = 1
-        self.assertEqual(self.callback.count, 0)
+        self.assert_count(Action.SET, 0)
         x[0] = 0
-        self.assertEqual(self.callback.count, 1)
+        self.assert_count(Action.SET, 1)
         x[1] = 4
-        self.assertEqual(self.callback.count, 2)
+        self.assert_count(Action.SET, 2)
         x[2] = -100
-        self.assertEqual(self.callback.count, 3)
+        self.assert_count(Action.SET, 3)
         x[0] += 1
-        self.assertEqual(self.callback.count, 4)
+        self.assert_count(Action.SET, 4)
         #unsubscribing
         x.unsubscribe(s_id)
-        x["B"] = 25
-        self.assertEqual(self.callback.count, 4)
+        x[2] = 25
+        self.assert_count(Action.SET, 4)
 
-    def _test_one_layered_initially_empty(self):
+    def test_one_layered_append(self):
         '''
         Testing one subscriber on a dictionary that's empty
         and new items will be added to it
         '''
-        x = tie_pyify({}, {})
-        self.callback.obj = x
+        x = tie_pyify([], {})
+        self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
-        x["A"] = 0
-        self.assertEqual(self.callback.count, 1)
-        x["B"] = 4
-        self.assertEqual(self.callback.count, 2)
-        x["C"] = -100
-        self.assertEqual(self.callback.count, 3)
-        x["A"] += 1
-        self.assertEqual(self.callback.count, 4)
+        x.append(0)
+        self.assert_count(Action.SET, 1)
+        x[0] = 12
+        self.assert_count(Action.SET, 2)
+
+        x.append(2)
+        self.assert_count(Action.SET, 3)
+        x[1] = 32
+        self.assert_count(Action.SET, 4)
+
+        x.append(3)
+        self.assert_count(Action.SET, 5)
+
         #unsubscribing
         x.unsubscribe(s_id)
-        x["B"] = 25
-        x["D"] = 98
-        self.assertEqual(self.callback.count, 4)
+        x[0] = 25
+        self.assert_count(Action.SET, 5)
+        x.append(3)
+        self.assert_count(Action.SET, 5)
+
+    def test_one_layered_extend(self):
+        x = tie_pyify([1, 2], {})
+        self.callback.owner = x
+        s_id = x.subscribe(self.callback)
+
+        x.extend([4, 5])
+        self.assert_count(Action.SET, 0)
+        self.assert_count(Action.EXTEND, 1)
+
+        x.extend([])
+        self.assert_count(Action.EXTEND, 2)
+    
+        x.extend([1])
+        self.assert_count(Action.EXTEND, 3)
+ 
+        self.assertEqual(len(x), 5)
+        self.assertEqual(x[0], 1)
+        self.assertEqual(x[1], 2)
+        self.assertEqual(x[2], 4)
+        self.assertEqual(x[3], 5)
+        self.assertEqual(x[4], 1)
+       
+        #unsubscribing
+        x.unsubscribe(s_id)
+        x.extend([2, 3])
+        self.assert_count(Action.EXTEND, 3)
+        self.assertEqual(x[-2:], [2, 3])
+
+    def test_one_layered_clear(self):
+        x = tie_pyify([1, 2, 3, 4], {})
+        self.callback.owner = x
+        s_id = x.subscribe(self.callback)
+        
+        x.clear()
+        self.assert_count(Action.CLEAR, 1)
+        self.assertEqual(x, [])
+        
+        x.append(1)
+        self.assert_count(Action.SET, 1)
+        self.assert_count(Action.CLEAR, 1)
+        self.assertEqual(x, [1])
+
+        x.clear()
+        self.assert_count(Action.CLEAR, 2)
+        self.assertEqual(x, [])
+
+        x.clear()
+        self.assert_count(Action.CLEAR, 3)
+        self.assertEqual(x, [])
+
+        #unsubscribing
+        x.unsubscribe(s_id)
+        x.clear()
+        self.assert_count(Action.CLEAR, 3)
 
     def _test_one_layered_with_multiple_subscribers(self):
         '''
@@ -269,4 +345,3 @@ class TestTiePyList(unittest.TestCase):
         m["L"]["T"] = 99
         self.assertEqual(self.callback.count, 2)
         self.assertEqual(callback_1.count, 2)
-

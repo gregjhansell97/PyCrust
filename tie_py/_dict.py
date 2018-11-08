@@ -44,23 +44,16 @@ def tie_pyify(obj, callbacks={}):
                 key: the key to access the value
                 value: the value being assigned
             '''
+            if key in self and self[key] is value:
+                return class_.__setitem__(self, key, value)
             #if key doesn't change then don't do anything
             if value not in self._chain and value is not self:
-                if key in self:
-                    if self[key] is value:
-                        return value
-
                 callbacks = {} #copy of callbacks generated for child class
                 for id_ in self._callbacks.keys():
                     owner, keys, cb = self._callbacks[id_]
                     callbacks[id_] = (owner, keys + [key], cb)
-                value = tie_py._factory.tie_pyify(
-                    value,
-                    callbacks = callbacks)
-            r = class_.__setitem__(
-                self,
-                key,
-                value)
+                value = tie_py._factory.tie_pyify(value, callbacks=callbacks)
+            r = class_.__setitem__(self, key, value)
             self._run_callbacks(key, value, Action.SET)
 
             return r
