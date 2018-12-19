@@ -277,6 +277,26 @@ class TestTiePyDicts(unittest.TestCase):
         x["A"]["B"]["A"]["B"] = 29
         self.assert_count(Action.SET, 10)
 
+    def test_multiple_keys_to_same_object(self):
+        x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
+        x = tie_pyify(x, {})
+        self.callback.owner = x
+        s_id = x.subscribe(self.callback)
+
+        m = x["A"]["C"]
+        x["H"] = 98
+        self.assert_count(Action.SET, 1)
+
+        x["H"] = m
+        self.assert_count(Action.SET, 2)
+ 
+        x["H"]["D"] = 99
+        self.assert_count(Action.SET, 3)
+
+        del x["H"]
+        x["A"]["C"]["D"] = 120
+        self.assert_count(Action.SET, 4)
+    
     def test_in_object_dict_moves_with_multiple_callbacks(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
         x = tie_pyify(x, {})

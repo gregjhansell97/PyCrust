@@ -126,6 +126,33 @@ class TestTiePyList(unittest.TestCase):
         self.assert_count(Action.EXTEND, 3)
         self.assertEqual(x[-2:], [2, 3])
 
+    def test_one_layered_iadd(self):
+        x = tie_pyify([1, 2], {})
+        self.callback.owner = x
+        s_id = x.subscribe(self.callback)
+
+        x += [4, 5]
+        self.assert_count(Action.SET, 0)
+        self.assert_count(Action.EXTEND, 1)
+
+        x += []
+        self.assert_count(Action.EXTEND, 2)
+    
+        x += [1]
+        self.assert_count(Action.EXTEND, 3)
+ 
+        self.assertEqual(len(x), 5)
+        self.assertEqual(x[0], 1)
+        self.assertEqual(x[1], 2)
+        self.assertEqual(x[2], 4)
+        self.assertEqual(x[3], 5)
+        self.assertEqual(x[4], 1)
+       
+        #unsubscribing
+        x.unsubscribe(s_id)
+        x += [2, 3]
+        self.assert_count(Action.EXTEND, 3)
+
     def test_one_layered_clear(self):
         x = tie_pyify([1, 2, 3, 4], {})
         self.callback.owner = x
@@ -152,6 +179,9 @@ class TestTiePyList(unittest.TestCase):
         x.unsubscribe(s_id)
         x.clear()
         self.assert_count(Action.CLEAR, 3)
+
+    def test_one_layered_insert(self):
+        pass    
 
     def _test_one_layered_with_multiple_subscribers(self):
         '''
