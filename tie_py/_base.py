@@ -26,34 +26,35 @@ class TiePyBase:
         _chain([objects]): passes on a chain of accessed items to ensure there
             is not a circular reference. A set would be a better runtime
     '''
-    def __init__(self, obj, callbacks={}):
-        self._chain = []
-        self._callbacks = callbacks
+    def __init__(self, obj, owners):
+        self._owners = owners
+        self._callbacks = {}
         self._publish = False
         self._copy(obj)
         self._publish = True
 
-    def _extend_callbacks(self, callbacks, ext_path=[]):
-        '''
-        if one ore more callback arrays are added to the system
+    def __hash__(self):
+        return id(self)
 
-        Args:
-            callbacks ([(owner, path, callback)]): list of callbacks being added
-            ext_path (list): the additional path that needs to be appended to
-                the current callbacks path
-        '''
+    def _extend_owners(self, owners={}):
         self._publish = False
-        #ensures the correct chain of keys for each callback
-        for id_, v in callbacks.items():
-            owner, path, callback = v
-            self._callbacks[id_] = (owner, path + ext_path, callback)
+
+        owners_diff = {}
+        for owner, paths in owners.items():
+            diff = paths - self._owners[owner]
+            owners_diff[owner] = diff
+            self._owners[owner] |= diff
 
         for s, v in self._get_items():
-            if issubclass(v.__class__, TiePyBase):
-                v._extend_callbacks(callbacks, ext_path + [s])
-        self._publish = True
+            if issubclass(v.__class__, TiePyBase): #checks for circular reference
+                next_owner = {}
+                for owner, paths in owners_diff.items():
+                    next_owner[owner] = {p + (s,) for p in paths}
+                v._extend_owners(next_owner)
 
-    def _run_callbacks(self, step, value, action):#we should have the function called too
+        self._publish = True  
+
+    def _run_callbacks(self, owners, value, action):
         '''
         executes all callbacks passing along the arguments above
 
@@ -65,28 +66,43 @@ class TiePyBase:
         if not self._publish:
             return
 
-        for owner, path, callback in self._callbacks.values():
-            callback(
-                owner=owner,
-                path=path + [step],
-                value=value,
-                action=action
+        for owner, paths in owners.items():
+            for callback in owner._callbacks.values():
+                callback(
+                    owner=owner,
+                    path=next(iter(paths)),
+                    value=value,
+                    action=action
                 )
 
-    def _subscribe(self, id_, owner, prior_path, callback):
-        '''
-        gets drivin by the subscribe operator
 
-        Args:
-            id_(int): the id of the callback
-            owner (obj): the originator of the subscription
-            prior_path([obj]): the path from the owner to the value
-            callback(function): gets called on variable change
+    def _propagate_owner(self, owner, path):
         '''
-        self._callbacks[id_] = (owner, prior_path, callback)
+        '''
+        self._owners[owner].add(path)
         for s, v in self._get_items():
             if issubclass(v.__class__, TiePyBase):
-                v._subscribe(id_, owner, prior_path + [s], callback)
+                v._propagate_owner(owner, path + (s,))
+   
+    def _remove_paths(self, step, value): 
+        for owner, paths in self._owners.items():
+            if owner not in value._owners: continue
+            removed_paths = {p + (step,) for p in paths}
+            value._owners[owner] -= removed_paths
+            if len(value._owners[owner]) == 0:
+                del value._owners[owner]
+            value._remove_next_paths(owner, removed_paths, {value})
+    
+    def _remove_next_paths(self, owner, paths, chain):
+        for s, v in self._get_items():
+            if issubclass(v.__class__, TiePyBase) and v not in chain:
+                removed_paths = {p + (s,) for p in paths}
+                v._owners[owner] -= removed_paths
+                if len(v._owners[owner]) == 0:
+                    del v._owners[owner]
+                v._remove_next_paths(owner, removed_paths, chain|{v})
+                
+                
 
     def subscribe(self, callback):
         '''
@@ -101,27 +117,10 @@ class TiePyBase:
             int: the id of the subscriber
         '''
         id_ = get_id()
-        self._subscribe(id_, self, [], callback) #self is the og owner
+        self._callbacks[id_] = callback
+        self._propagate_owner(self, ())
         return id_
 
-    def _unsubscribe(self, ids=[]):
-        '''
-        a list of id's to unsubscribe the object from (remove callbacks),
-        intended for internal use but if you're feeling confident try it out!
-
-        Args:
-            ids ([int]): the list of ids that are being unsubscribed from
-        '''
-        for id_ in ids:
-            if id_ in self._callbacks:
-               owner, _, _ = self._callbacks[id_]
-               if owner is self and id_ not in get_id.available:
-                   get_id.available.append(id_)
-               del self._callbacks[id_]
-
-            for v in self._get_values():
-                if issubclass(v.__class__, TiePyBase):
-                    v._unsubscribe(ids)
     def unsubscribe(self, id_):
         '''
         removes the callback function with that id_ from the subscription list
@@ -130,7 +129,7 @@ class TiePyBase:
             id_: the id of the subscriber
         '''
         if id_ in self._callbacks:
-            self._unsubscribe([id_])
+            del self._callbacks[id_]
 
     def _copy(self, obj):
         '''

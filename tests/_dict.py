@@ -16,7 +16,7 @@ class TestTiePyDicts(unittest.TestCase):
         in the test function itself
         '''
         def callback(owner, path, value, action):
-            
+            path = list(path) 
             self.assertTrue(callback.owner is owner)
             
             #follows the path down
@@ -54,7 +54,7 @@ class TestTiePyDicts(unittest.TestCase):
         been made before hand (no new keys)
         '''
         x = {"A": 1, "B": 2, "C": 3}
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -80,7 +80,7 @@ class TestTiePyDicts(unittest.TestCase):
         Testing one subscriber on a dictionary that's empty
         and new items will be added to it
         '''
-        x = tie_pyify({}, {})
+        x = tie_pyify({})
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -106,7 +106,7 @@ class TestTiePyDicts(unittest.TestCase):
         '''
         Testing multiple subscribers on a dictionary
         '''
-        x = tie_pyify({}, {})
+        x = tie_pyify({})
         self.callback.owner = x
         sub_count = 10 #must be larger than 3
         ids = [x.subscribe(self.callback) for _ in range(sub_count)]
@@ -147,7 +147,7 @@ class TestTiePyDicts(unittest.TestCase):
         children should be unsubscribed
         '''
         x = {"A": 1, "B": 2, "C": 3}
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -172,7 +172,7 @@ class TestTiePyDicts(unittest.TestCase):
         Testing a multilevel dictionary
         '''
         x = {"A": {"B": 1, "C": {"D": 10}, }, "E": {"F": 30}}
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -202,24 +202,23 @@ class TestTiePyDicts(unittest.TestCase):
         g["NO"] = "YES"
         self.assert_count(Action.SET, 6)
 
-        g.unsubscribe(s_id)
-        g["NO"] = "NO"
+        g["NO"] = "YES"
         self.assert_count(Action.SET, 6)
 
         x["A"]["NO"] = "Maybe"
-        self.assert_count(Action.SET, 6)
+        self.assert_count(Action.SET, 7)
 
         x["E"]["F"] = "39"
-        self.assert_count(Action.SET, 7)
+        self.assert_count(Action.SET, 8)
 
         x.unsubscribe(s_id)
 
         x["E"]["F"] = "12"
-        self.assert_count(Action.SET, 7)
+        self.assert_count(Action.SET, 8)
 
     def test_multi_layered_delete_operation(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -242,7 +241,7 @@ class TestTiePyDicts(unittest.TestCase):
 
     def test_in_object_dict_moves(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -277,9 +276,11 @@ class TestTiePyDicts(unittest.TestCase):
         x["A"]["B"]["A"]["B"] = 29
         self.assert_count(Action.SET, 10)
 
+        x.unsubscribe(s_id)
+
     def test_multiple_keys_to_same_object(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -299,13 +300,14 @@ class TestTiePyDicts(unittest.TestCase):
     
     def test_in_object_dict_moves_with_multiple_callbacks(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
         def callback_1(owner, path, value, action):
             self.assertTrue(callback_1.owner is owner)
             v = owner
+            path = list(path)
             while len(path) > 0:
                 k = path.pop(0)
                 if k in v:
@@ -328,7 +330,7 @@ class TestTiePyDicts(unittest.TestCase):
 
 
         m = {"Z": 1}
-        m = tie_pyify(m, {})
+        m = tie_pyify(m)
         callback_1.owner = m
         m_id = m.subscribe(callback_1)
         m["L"] = {"T": 98}
