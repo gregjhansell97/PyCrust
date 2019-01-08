@@ -29,9 +29,9 @@ class TestTiePyDicts(unittest.TestCase):
                     v = None
                     break
 
-            if action == Action.SET:
+            if action == dict.__setitem__:
                 self.assertTrue(value is v)
-            elif action == Action.DELETE:
+            elif action == dict.__delitem__:
                 self.assertTrue(value is None)
                 self.assertTrue(len(path) == 0)
             else:
@@ -59,21 +59,21 @@ class TestTiePyDicts(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         x["A"] = 0
-        self.assert_count(Action.SET, 1)
+        self.assert_count(dict.__setitem__, 1)
 
         x["B"] = 4
-        self.assert_count(Action.SET, 2)
+        self.assert_count(dict.__setitem__, 2)
 
         x["C"] = -100
-        self.assert_count(Action.SET, 3)
+        self.assert_count(dict.__setitem__, 3)
 
         x["A"] += 1
-        self.assert_count(Action.SET, 4)
+        self.assert_count(dict.__setitem__, 4)
 
         #unsubscribing
         x.unsubscribe(s_id)
         x["B"] = 25
-        self.assert_count(Action.SET, 4)
+        self.assert_count(dict.__setitem__, 4)
 
     def test_one_layered_initially_empty(self):
         '''
@@ -85,22 +85,22 @@ class TestTiePyDicts(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         x["A"] = 0
-        self.assert_count(Action.SET, 1)
+        self.assert_count(dict.__setitem__, 1)
 
         x["B"] = 4
-        self.assert_count(Action.SET, 2)
+        self.assert_count(dict.__setitem__, 2)
 
         x["C"] = -100
-        self.assert_count(Action.SET, 3)
+        self.assert_count(dict.__setitem__, 3)
 
         x["A"] += 1
-        self.assert_count(Action.SET, 4)
+        self.assert_count(dict.__setitem__, 4)
 
         #unsubscribing
         x.unsubscribe(s_id)
         x["B"] = 25
         x["D"] = 98
-        self.assert_count(Action.SET, 4)
+        self.assert_count(dict.__setitem__, 4)
 
     def test_one_layered_with_multiple_subscribers(self):
         '''
@@ -112,23 +112,23 @@ class TestTiePyDicts(unittest.TestCase):
         ids = [x.subscribe(self.callback) for _ in range(sub_count)]
         
         x["A"] = 0
-        self.assert_count(Action.SET, sub_count)
+        self.assert_count(dict.__setitem__, sub_count)
 
         x["B"] = 4
-        self.assert_count(Action.SET, 2*sub_count)
+        self.assert_count(dict.__setitem__, 2*sub_count)
 
         x["C"] = -100
-        self.assert_count(Action.SET, 3*sub_count)
+        self.assert_count(dict.__setitem__, 3*sub_count)
 
         x["A"] += 1
-        self.assert_count(Action.SET, 4*sub_count)
+        self.assert_count(dict.__setitem__, 4*sub_count)
 
         #partially unsubscribing (removing 3 items)
         for i in range(sub_count - (sub_count - 3)):
             x.unsubscribe(ids.pop())
 
         x["B"] = 25
-        self.assert_count(Action.SET, 4*sub_count + (sub_count - 3))
+        self.assert_count(dict.__setitem__, 4*sub_count + (sub_count - 3))
 
         #completely unsubscribing
         for s_id in ids:
@@ -136,7 +136,7 @@ class TestTiePyDicts(unittest.TestCase):
 
         x["D"] = 98
         self.assert_count(
-            Action.SET,
+            dict.__setitem__,
             4*sub_count + (sub_count - 3))
 
     def test_one_layered_delete_operation(self):
@@ -152,19 +152,19 @@ class TestTiePyDicts(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         del x["A"]
-        self.assert_count(Action.DELETE, 1)
-        self.assert_count(Action.SET, 0)
+        self.assert_count(dict.__delitem__, 1)
+        self.assert_count(dict.__setitem__, 0)
         self.assertTrue("A" not in x)
 
         del x["B"]
-        self.assert_count(Action.DELETE, 2)
+        self.assert_count(dict.__delitem__, 2)
         self.assertTrue("B" not in x)
 
         #unsubscribing
         x.unsubscribe(s_id)
 
         del x["C"]
-        self.assert_count(Action.DELETE, 2)
+        self.assert_count(dict.__delitem__, 2)
         self.assertTrue("C" not in x)
 
     def test_multi_layered_general(self):
@@ -177,44 +177,44 @@ class TestTiePyDicts(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         x["A"]["B"] = 10
-        self.assert_count(Action.SET, 1)
+        self.assert_count(dict.__setitem__, 1)
         x["A"]["C"]["D"] = 25
-        self.assert_count(Action.SET, 2)
+        self.assert_count(dict.__setitem__, 2)
 
         m = x["A"]
         m["B"] = 35
         self.assertEqual(x["A"]["B"], 35)
-        self.assert_count(Action.SET, 3)
+        self.assert_count(dict.__setitem__, 3)
 
         m["B"] = {"GREG": 28}
         self.assertEqual(x["A"]["B"], m["B"])
-        self.assert_count(Action.SET, 4)
+        self.assert_count(dict.__setitem__, 4)
 
         m["B"]["GREG"] = 29
         self.assertEqual(x["A"]["B"]["GREG"], m["B"]["GREG"])
-        self.assert_count(Action.SET, 5)
+        self.assert_count(dict.__setitem__, 5)
 
         g = m
         m = {}
         m["NO"] = "YES"
-        self.assert_count(Action.SET, 5)
+        self.assert_count(dict.__setitem__, 5)
 
         g["NO"] = "YES"
-        self.assert_count(Action.SET, 6)
+        self.assert_count(dict.__setitem__, 6)
 
         g["NO"] = "YES"
-        self.assert_count(Action.SET, 6)
+        self.assert_count(dict.__setitem__, 6)
 
         x["A"]["NO"] = "Maybe"
-        self.assert_count(Action.SET, 7)
+        self.assert_count(dict.__setitem__, 7)
 
         x["E"]["F"] = "39"
-        self.assert_count(Action.SET, 8)
+        self.assert_count(dict.__setitem__, 8)
 
         x.unsubscribe(s_id)
 
         x["E"]["F"] = "12"
-        self.assert_count(Action.SET, 8)
+        self.assert_count(dict.__setitem__, 8)
 
     def test_multi_layered_delete_operation(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
@@ -223,19 +223,19 @@ class TestTiePyDicts(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         del x["A"]["B"]
-        self.assert_count(Action.DELETE, 1)
+        self.assert_count(dict.__delitem__, 1)
         self.assertTrue("B" not in x["A"])
 
         x["A"]["C"]["D"] = 98
-        self.assert_count(Action.SET, 1)
+        self.assert_count(dict.__setitem__, 1)
 
         b = x["A"]
         del x["A"]
-        self.assert_count(Action.DELETE, 2)
+        self.assert_count(dict.__delitem__, 2)
         self.assertTrue("A" not in x)
 
         b["D"] = 97
-        self.assert_count(Action.SET, 1)
+        self.assert_count(dict.__setitem__, 1)
 
         x.unsubscribe(s_id)
 
@@ -247,34 +247,34 @@ class TestTiePyDicts(unittest.TestCase):
 
         m = x["A"]["C"]
         x["H"] = 98
-        self.assert_count(Action.SET, 1)
+        self.assert_count(dict.__setitem__, 1)
 
         x["H"] = m
-        self.assert_count(Action.SET, 2)
+        self.assert_count(dict.__setitem__, 2)
 
         x["H"]["D"] = 99
-        self.assert_count(Action.SET, 3)
+        self.assert_count(dict.__setitem__, 3)
 
         x["A"]["C"] = 45
-        self.assert_count(Action.SET, 4)
+        self.assert_count(dict.__setitem__, 4)
 
         x["H"]["D"] = 73
-        self.assert_count(Action.SET, 5)
+        self.assert_count(dict.__setitem__, 5)
 
         x["N"] = 42
-        self.assert_count(Action.SET, 6)
+        self.assert_count(dict.__setitem__, 6)
 
 	#challenge problem
         x["N"] = x
-        self.assert_count(Action.SET, 7)
+        self.assert_count(dict.__setitem__, 7)
         x["N"]["N"]["N"]["N"] = 10
-        self.assert_count(Action.SET, 8)
+        self.assert_count(dict.__setitem__, 8)
 
         #even more challenging
         x["A"]["B"] = x
-        self.assert_count(Action.SET, 9)
+        self.assert_count(dict.__setitem__, 9)
         x["A"]["B"]["A"]["B"] = 29
-        self.assert_count(Action.SET, 10)
+        self.assert_count(dict.__setitem__, 10)
 
         x.unsubscribe(s_id)
 
@@ -286,17 +286,17 @@ class TestTiePyDicts(unittest.TestCase):
 
         m = x["A"]["C"]
         x["H"] = 98
-        self.assert_count(Action.SET, 1)
+        self.assert_count(dict.__setitem__, 1)
 
         x["H"] = m
-        self.assert_count(Action.SET, 2)
+        self.assert_count(dict.__setitem__, 2)
  
         x["H"]["D"] = 99
-        self.assert_count(Action.SET, 3)
+        self.assert_count(dict.__setitem__, 3)
 
         del x["H"]
         x["A"]["C"]["D"] = 120
-        self.assert_count(Action.SET, 4)
+        self.assert_count(dict.__setitem__, 4)
     
     def test_in_object_dict_moves_with_multiple_callbacks(self):
         x = {"A": {"B": 1, "C": {"D": 10, "G": 32}, "J": 67}, "E": {"F": 30}}
@@ -315,9 +315,9 @@ class TestTiePyDicts(unittest.TestCase):
                 else:
                     v = None
                     break
-            if action == Action.SET:
+            if action == dict.__setitem__:
                 self.assertTrue(value is v)
-            elif action == Action.DELETE:
+            elif action == dict.__delitem__:
                 self.assertTrue(value is None)
                 self.assertTrue(len(path) == 0)
             else:
@@ -334,13 +334,13 @@ class TestTiePyDicts(unittest.TestCase):
         callback_1.owner = m
         m_id = m.subscribe(callback_1)
         m["L"] = {"T": 98}
-        assert_count_1(Action.SET, 1)
+        assert_count_1(dict.__setitem__, 1)
 
         x["A"]["J"] = m
-        self.assert_count(Action.SET, 1)
-        assert_count_1(Action.SET, 1)
+        self.assert_count(dict.__setitem__, 1)
+        assert_count_1(dict.__setitem__, 1)
         self.assertTrue(x["A"]["J"] == m)
 
         m["L"]["T"] = 99
-        self.assert_count(Action.SET, 2)
-        assert_count_1(Action.SET, 2)
+        self.assert_count(dict.__setitem__, 2)
+        assert_count_1(dict.__setitem__, 2)

@@ -47,7 +47,7 @@ def tie_pyify(obj, owners):
          
             owners, value = self._tie_pyify(key, value)
             r = class_.__setitem__(self, key, value)
-            self._run_callbacks(owners, value, Action.SET) 
+            self._run_callbacks(owners, value, class_.__setitem__) 
             return r
 
         def __delitem__(self, key):
@@ -55,8 +55,9 @@ def tie_pyify(obj, owners):
             if issubclass(v.__class__, TiePyBase):
                 self._remove_paths(key, v)
             r = class_.__delitem__(self, key)
-            self._run_callbacks(self._owners, None, Action.DELETE)
+            self._run_callbacks(self._owners, None, class_.__delitem__)
             return r
+
     tie_pyify.classes[class_] = TiePyDict
     return TiePyDict(obj, owners)
 
