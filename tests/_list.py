@@ -25,16 +25,17 @@ class TestTiePyList(unittest.TestCase):
                 for i in range(len(path) - end_early):
                     step = path[i]
                     v = v[step]
+                if action == Action.SET:
+                    self.assertTrue(value is v)
+                if action == Action.EXTEND:
+                    self.assertEqual(v[path[-1]:], value) 
+                if action == Action.CLEAR:
+                    self.assertEqual(len(v), 0)
+                    self.assertEqual(value, [])
+                self.callback.count[action] += 1
             except Exception as e:
+                print(e)
                 self.assertTrue(False)
-            if action == Action.SET:
-                self.assertTrue(value is v)
-            if action == Action.EXTEND:
-                self.assertEqual(v[path[-1]:], value) 
-            if action == Action.CLEAR:
-                self.assertEqual(len(v), 0)
-                self.assertEqual(value, [])
-            self.callback.count[action] += 1
 
         self.callback = callback
         self.callback.count = defaultdict(lambda: 0)
@@ -50,7 +51,7 @@ class TestTiePyList(unittest.TestCase):
         been made before hand
         '''
         x = [1, 2, 3]
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -74,7 +75,7 @@ class TestTiePyList(unittest.TestCase):
         Testing one subscriber on a dictionary that's empty
         and new items will be added to it
         '''
-        x = tie_pyify([], {})
+        x = tie_pyify([])
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -99,7 +100,7 @@ class TestTiePyList(unittest.TestCase):
         self.assert_count(Action.SET, 5)
 
     def test_one_layered_extend(self):
-        x = tie_pyify([1, 2], {})
+        x = tie_pyify([1, 2])
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -108,10 +109,10 @@ class TestTiePyList(unittest.TestCase):
         self.assert_count(Action.EXTEND, 1)
 
         x.extend([])
-        self.assert_count(Action.EXTEND, 2)
+        self.assert_count(Action.EXTEND, 1)
     
         x.extend([1])
-        self.assert_count(Action.EXTEND, 3)
+        self.assert_count(Action.EXTEND, 2)
  
         self.assertEqual(len(x), 5)
         self.assertEqual(x[0], 1)
@@ -123,11 +124,11 @@ class TestTiePyList(unittest.TestCase):
         #unsubscribing
         x.unsubscribe(s_id)
         x.extend([2, 3])
-        self.assert_count(Action.EXTEND, 3)
+        self.assert_count(Action.EXTEND, 2)
         self.assertEqual(x[-2:], [2, 3])
 
     def test_one_layered_iadd(self):
-        x = tie_pyify([1, 2], {})
+        x = tie_pyify([1, 2])
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
@@ -136,10 +137,10 @@ class TestTiePyList(unittest.TestCase):
         self.assert_count(Action.EXTEND, 1)
 
         x += []
-        self.assert_count(Action.EXTEND, 2)
+        self.assert_count(Action.EXTEND, 1)
     
         x += [1]
-        self.assert_count(Action.EXTEND, 3)
+        self.assert_count(Action.EXTEND, 2)
  
         self.assertEqual(len(x), 5)
         self.assertEqual(x[0], 1)
@@ -151,10 +152,10 @@ class TestTiePyList(unittest.TestCase):
         #unsubscribing
         x.unsubscribe(s_id)
         x += [2, 3]
-        self.assert_count(Action.EXTEND, 3)
+        self.assert_count(Action.EXTEND, 2)
 
     def test_one_layered_clear(self):
-        x = tie_pyify([1, 2, 3, 4], {})
+        x = tie_pyify([1, 2, 3, 4])
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
         
@@ -180,14 +181,14 @@ class TestTiePyList(unittest.TestCase):
         x.clear()
         self.assert_count(Action.CLEAR, 3)
 
-    def test_one_layered_insert(self):
+    def _test_one_layered_insert(self):
         pass    
 
     def _test_one_layered_with_multiple_subscribers(self):
         '''
         Testing multiple subscribers on a dictionary
         '''
-        x = tie_pyify({}, {})
+        x = tie_pyify({})
         self.callback.obj = x
         sub_count = 10 #must be larger than 3
         ids = [x.subscribe(self.callback) for _ in range(sub_count)]
@@ -222,7 +223,7 @@ class TestTiePyList(unittest.TestCase):
         children should be unsubscribed
         '''
         x = {"A": 1, "B": 2, "C": 3}
-        x = tie_pyify(x, {})
+        x = tie_pyify(x)
         self.callback.obj = x
         s_id = x.subscribe(self.callback)
 

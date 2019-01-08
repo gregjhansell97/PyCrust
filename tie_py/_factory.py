@@ -20,7 +20,6 @@ def tie_pyify(obj, owners=None):
     '''
     if owners is None: owners = defaultdict(set)
     if issubclass(obj.__class__, TiePyBase):
-        #subclass of TiePyBase, inject callbacks into it
         obj._extend_owners(owners)
         return obj
     elif "__dict__" in dir(obj):

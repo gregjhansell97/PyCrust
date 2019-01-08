@@ -1,9 +1,10 @@
 import tie_py._factory
 
+from itertools import tee
 from tie_py._base import TiePyBase
 from tie_py._enums import Action
 
-def tie_pyify(obj, callbacks={}):
+def tie_pyify(obj, owners):
     class_ = obj.__class__
     class TiePyList(TiePyBase, class_):
         '''
@@ -15,16 +16,26 @@ def tie_pyify(obj, callbacks={}):
         ABSTRACT INHERITED FUNCTIONS
         '''
 
-        def __iadd__(self, iterable):
+        def __iadd__(self, itr):
             '''
             Wrapper for
 
             Args:
             '''
+            #same as extend code
             start = len(self)
-            tie_pyified_iterable = map(lambda iv: self._convert(iv[1], start + iv[0]), enumerate(iterable))
-            r = class_.__iadd__(self, tie_pyified_iterable)
-            self._run_callbacks(start, self[start:], Action.EXTEND)
+            tp_itr_2, tp_itr_1  = tee(map(
+                lambda iv: self._tie_pyify(start + iv[0], iv[1]), enumerate(itr)
+            ))
+            values = map(lambda owner_value: owner_value[1], tp_itr_1)
+            r = class_.__iadd__(self, values)
+
+            try:
+                owners, value = next(tp_itr_2)
+            except StopIteration: 
+                pass
+            else:
+                self._run_callbacks(owners, self[start:], Action.EXTEND)
             return r
 
         def __imul__(self, v):
@@ -41,23 +52,17 @@ def tie_pyify(obj, callbacks={}):
   
             Args:
             '''
-            if 0 <= index < len(self) and self[index] is value:
-                return class_.__setitem__(self, index, value)
-            value = self._convert(value, index)
+            owner = None
+            if index in range(len(self)):
+                v = self[index]
+                if v is value:
+                    return class_.__setitem__(self, index, value)
+                elif issubclass(v.__class__, TiePyBase):
+                    self._remove_paths(index, v)
+                owners, value = self._tie_pyify(index, value)
             r = class_.__setitem__(self, index, value)
-            self._run_callbacks(index, value, Action.SET)
+            self._run_callbacks(owners, value, Action.SET)
             return r
-
-        def _convert(self, value, step):
-            '''
-            '''
-            if value not in self._chain and value is not self:
-                callbacks = {}
-                for id_ in self._callbacks.keys():
-                    owner, path, cb = self._callbacks[id_]
-                    callbacks[id_] = (owner, path + [step], cb)
-                return tie_py._factory.tie_pyify(value, callbacks=callbacks)
-            return value
 
         def _copy(self, obj):
             '''
@@ -81,9 +86,9 @@ def tie_pyify(obj, callbacks={}):
             Args:
             '''
             step = len(self)
-            value = self._convert(value, step)
+            owners, value = self._tie_pyify(step, value)
             r = class_.append(self, value)
-            self._run_callbacks(step, value, Action.SET)
+            self._run_callbacks(owners, value, Action.SET)
             return r
 
         def clear(self):
@@ -92,20 +97,34 @@ def tie_pyify(obj, callbacks={}):
 
             Args:
             '''
+            for i, v in enumerate(self):
+                if issubclass(v.__class__, TiePyBase):
+                    self._remove_paths(i, v)
             r = class_.clear(self)
-            self._run_callbacks(0, self, Action.CLEAR)
+            self._run_callbacks(self._owners, self, Action.CLEAR)
+            return r
 
 
-        def extend(self, iterable):
+        def extend(self, itr):
             '''
             Wrapper for
  
             Args:
             '''
+            #same code as extend
             start = len(self)
-            tie_pyified_iterable = map(lambda iv: self._convert(iv[1], start + iv[0]), enumerate(iterable))
-            r = class_.extend(self, tie_pyified_iterable)
-            self._run_callbacks(start, self[start:], Action.EXTEND)
+            tp_itr_2, tp_itr_1  = tee(map(
+                lambda iv: self._tie_pyify(start + iv[0], iv[1]), enumerate(itr)
+            ))
+            values = map(lambda owner_value: owner_value[1], tp_itr_1)
+            r = class_.extend(self, values)
+
+            try:
+                owners, value = next(tp_itr_2)
+            except StopIteration: 
+                pass
+            else:
+                self._run_callbacks(owners, self[start:], Action.EXTEND)
             return r
 
         def insert(self, index, value):
@@ -114,10 +133,7 @@ def tie_pyify(obj, callbacks={}):
 
             Args:
             '''
-            value = self._convert(value)
-            r = class_.insert(self, index, value)
-            self._run_callbacks(index, self[index:], Action.EXTEND) 
-            return r 
+            pass
 
 
         def remove(self, index):
@@ -129,4 +145,4 @@ def tie_pyify(obj, callbacks={}):
             pass
 
 
-    return TiePyList(obj, callbacks=callbacks)
+    return TiePyList(obj, owners)

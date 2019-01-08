@@ -1,5 +1,8 @@
+from collections import defaultdict
 from itertools import zip_longest
 from tie_py._enums import Action
+
+import tie_py._factory
 
 def get_id():
     if len(get_id.available) > 0:
@@ -54,6 +57,12 @@ class TiePyBase:
 
         self._publish = True  
 
+    def _tie_pyify(self, step, value):
+        owners = defaultdict(set)
+        for o, paths in self._owners.items():
+            owners[o] = {p + (step,) for p in paths}
+        return (owners, tie_py._factory.tie_pyify(value, owners))
+
     def _run_callbacks(self, owners, value, action):
         '''
         executes all callbacks passing along the arguments above
@@ -74,6 +83,7 @@ class TiePyBase:
                     value=value,
                     action=action
                 )
+
 
 
     def _propagate_owner(self, owner, path):

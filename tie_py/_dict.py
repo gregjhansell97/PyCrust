@@ -26,6 +26,7 @@ def tie_pyify(obj, owners):
         def _get_values(self):
             return self.values()
 
+
         '''
         MAGIC METHODS
         '''
@@ -37,22 +38,14 @@ def tie_pyify(obj, owners):
                 key: the key to access the value
                 value: the value being assigned
             '''
-            #if key doesn't change then don't do anything
-            if key in self and self[key] is value:
-                return class_.__setitem__(self, key, value)
-
             if key in self:
                 v = self[key]
                 if v is value:
                     return class_.__setitem__(self, key, value)
                 elif issubclass(v.__class__, TiePyBase):
                     self._remove_paths(key, v)
-
-            owners = defaultdict(set) #copy of callbacks generated for child class
-            for o, paths in self._owners.items():
-                owners[o] = {p + (key,) for p in paths}
-            value = tie_py._factory.tie_pyify(value, owners)
-
+         
+            owners, value = self._tie_pyify(key, value)
             r = class_.__setitem__(self, key, value)
             self._run_callbacks(owners, value, Action.SET) 
             return r
