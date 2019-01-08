@@ -2,7 +2,6 @@ import tie_py._factory
 
 from itertools import tee
 from tie_py._base import TiePyBase
-from tie_py._enums import Action
 
 def tie_pyify(obj, owners):
     class_ = obj.__class__
@@ -15,6 +14,9 @@ def tie_pyify(obj, owners):
         '''
         ABSTRACT INHERITED FUNCTIONS
         '''
+
+        def __delitem__(self, key):
+            pass
 
         def __iadd__(self, itr):
             '''
@@ -35,7 +37,7 @@ def tie_pyify(obj, owners):
             except StopIteration: 
                 pass
             else:
-                self._run_callbacks(owners, self[start:], Action.EXTEND)
+                self._run_callbacks(owners, self[start:], class_.__iadd__)
             return r
 
         def __imul__(self, v):
@@ -61,7 +63,7 @@ def tie_pyify(obj, owners):
                     self._remove_paths(index, v)
                 owners, value = self._tie_pyify(index, value)
             r = class_.__setitem__(self, index, value)
-            self._run_callbacks(owners, value, Action.SET)
+            self._run_callbacks(owners, value, class_.__setitem__)
             return r
 
         def _copy(self, obj):
@@ -88,7 +90,7 @@ def tie_pyify(obj, owners):
             step = len(self)
             owners, value = self._tie_pyify(step, value)
             r = class_.append(self, value)
-            self._run_callbacks(owners, value, Action.SET)
+            self._run_callbacks(owners, value, class_.append)
             return r
 
         def clear(self):
@@ -101,7 +103,7 @@ def tie_pyify(obj, owners):
                 if issubclass(v.__class__, TiePyBase):
                     self._remove_paths(i, v)
             r = class_.clear(self)
-            self._run_callbacks(self._owners, self, Action.CLEAR)
+            self._run_callbacks(self._owners, self, class_.clear)
             return r
 
 
@@ -124,7 +126,7 @@ def tie_pyify(obj, owners):
             except StopIteration: 
                 pass
             else:
-                self._run_callbacks(owners, self[start:], Action.EXTEND)
+                self._run_callbacks(owners, self[start:], class_.extend)
             return r
 
         def insert(self, index, value):
@@ -143,6 +145,13 @@ def tie_pyify(obj, owners):
             Args:
             '''
             pass
+
+        def pop(self, index=-1):
+            pass
+
+        def reverse(self):
+            pass
+
 
 
     return TiePyList(obj, owners)

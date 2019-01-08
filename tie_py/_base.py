@@ -1,6 +1,5 @@
 from collections import defaultdict
 from itertools import zip_longest
-from tie_py._enums import Action
 
 import tie_py._factory
 

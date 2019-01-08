@@ -1,9 +1,9 @@
+# external modules
 import unittest
-
 from collections import defaultdict
-from tie_py import tie_pyify
-from tie_py._enums import Action
 
+# inhouse
+from tie_py import tie_pyify
 
 class TestTiePyList(unittest.TestCase):
     '''
@@ -20,16 +20,16 @@ class TestTiePyList(unittest.TestCase):
         def callback(owner, path, value, action):
             self.assertTrue(callback.owner is owner)
             v = owner
-            end_early = (action == Action.EXTEND or action == Action.CLEAR)
+            end_early = (action in [list.extend, list.__iadd__, list.clear])
             try:
                 for i in range(len(path) - end_early):
                     step = path[i]
                     v = v[step]
-                if action == Action.SET:
+                if action in [list.__setitem__, list.append]:
                     self.assertTrue(value is v)
-                if action == Action.EXTEND:
+                if action in [list.__iadd__, list.extend]:
                     self.assertEqual(v[path[-1]:], value) 
-                if action == Action.CLEAR:
+                if action in [list.clear]:
                     self.assertEqual(len(v), 0)
                     self.assertEqual(value, [])
                 self.callback.count[action] += 1
@@ -56,19 +56,19 @@ class TestTiePyList(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         x[0] = 1
-        self.assert_count(Action.SET, 0)
+        self.assert_count(list.__setitem__, 0)
         x[0] = 0
-        self.assert_count(Action.SET, 1)
+        self.assert_count(list.__setitem__, 1)
         x[1] = 4
-        self.assert_count(Action.SET, 2)
+        self.assert_count(list.__setitem__, 2)
         x[2] = -100
-        self.assert_count(Action.SET, 3)
+        self.assert_count(list.__setitem__, 3)
         x[0] += 1
-        self.assert_count(Action.SET, 4)
+        self.assert_count(list.__setitem__, 4)
         #unsubscribing
         x.unsubscribe(s_id)
         x[2] = 25
-        self.assert_count(Action.SET, 4)
+        self.assert_count(list.__setitem__, 4)
 
     def test_one_layered_append(self):
         '''
@@ -80,24 +80,24 @@ class TestTiePyList(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         x.append(0)
-        self.assert_count(Action.SET, 1)
+        self.assert_count(list.append, 1)
         x[0] = 12
-        self.assert_count(Action.SET, 2)
+        self.assert_count(list.__setitem__, 1)
 
         x.append(2)
-        self.assert_count(Action.SET, 3)
+        self.assert_count(list.append, 2)
         x[1] = 32
-        self.assert_count(Action.SET, 4)
+        self.assert_count(list.__setitem__, 2)
 
         x.append(3)
-        self.assert_count(Action.SET, 5)
+        self.assert_count(list.append, 3)
 
         #unsubscribing
         x.unsubscribe(s_id)
         x[0] = 25
-        self.assert_count(Action.SET, 5)
+        self.assert_count(list.__setitem__, 2)
         x.append(3)
-        self.assert_count(Action.SET, 5)
+        self.assert_count(list.append, 3)
 
     def test_one_layered_extend(self):
         x = tie_pyify([1, 2])
@@ -105,14 +105,14 @@ class TestTiePyList(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         x.extend([4, 5])
-        self.assert_count(Action.SET, 0)
-        self.assert_count(Action.EXTEND, 1)
+        self.assert_count(list.__setitem__, 0)
+        self.assert_count(list.extend, 1)
 
         x.extend([])
-        self.assert_count(Action.EXTEND, 1)
+        self.assert_count(list.extend, 1)
     
         x.extend([1])
-        self.assert_count(Action.EXTEND, 2)
+        self.assert_count(list.extend, 2)
  
         self.assertEqual(len(x), 5)
         self.assertEqual(x[0], 1)
@@ -124,7 +124,7 @@ class TestTiePyList(unittest.TestCase):
         #unsubscribing
         x.unsubscribe(s_id)
         x.extend([2, 3])
-        self.assert_count(Action.EXTEND, 2)
+        self.assert_count(list.extend, 2)
         self.assertEqual(x[-2:], [2, 3])
 
     def test_one_layered_iadd(self):
@@ -133,14 +133,14 @@ class TestTiePyList(unittest.TestCase):
         s_id = x.subscribe(self.callback)
 
         x += [4, 5]
-        self.assert_count(Action.SET, 0)
-        self.assert_count(Action.EXTEND, 1)
+        self.assert_count(list.__setitem__, 0)
+        self.assert_count(list.__iadd__, 1)
 
         x += []
-        self.assert_count(Action.EXTEND, 1)
+        self.assert_count(list.__iadd__, 1)
     
         x += [1]
-        self.assert_count(Action.EXTEND, 2)
+        self.assert_count(list.__iadd__, 2)
  
         self.assertEqual(len(x), 5)
         self.assertEqual(x[0], 1)
@@ -152,7 +152,7 @@ class TestTiePyList(unittest.TestCase):
         #unsubscribing
         x.unsubscribe(s_id)
         x += [2, 3]
-        self.assert_count(Action.EXTEND, 2)
+        self.assert_count(list.__iadd__, 2)
 
     def test_one_layered_clear(self):
         x = tie_pyify([1, 2, 3, 4])
@@ -160,26 +160,26 @@ class TestTiePyList(unittest.TestCase):
         s_id = x.subscribe(self.callback)
         
         x.clear()
-        self.assert_count(Action.CLEAR, 1)
+        self.assert_count(list.clear, 1)
         self.assertEqual(x, [])
         
         x.append(1)
-        self.assert_count(Action.SET, 1)
-        self.assert_count(Action.CLEAR, 1)
+        self.assert_count(list.append, 1)
+        self.assert_count(list.clear, 1)
         self.assertEqual(x, [1])
 
         x.clear()
-        self.assert_count(Action.CLEAR, 2)
+        self.assert_count(list.clear, 2)
         self.assertEqual(x, [])
 
         x.clear()
-        self.assert_count(Action.CLEAR, 3)
+        self.assert_count(list.clear, 3)
         self.assertEqual(x, [])
 
         #unsubscribing
         x.unsubscribe(s_id)
         x.clear()
-        self.assert_count(Action.CLEAR, 3)
+        self.assert_count(list.clear, 3)
 
     def _test_one_layered_insert(self):
         pass    

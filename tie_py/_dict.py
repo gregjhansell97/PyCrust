@@ -2,7 +2,6 @@ from collections import defaultdict
 
 import tie_py._factory
 from tie_py._base import TiePyBase
-from tie_py._enums import Action
 
 def tie_pyify(obj, owners):
     class_ = obj.__class__

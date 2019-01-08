@@ -1,7 +1,9 @@
+# external modules
 import unittest
-from tie_py import tie_pyify
-from tie_py import Action
 from collections import defaultdict
+
+# inhouse
+from tie_py import tie_pyify
 
 class TestTiePyDicts(unittest.TestCase):
     '''
