@@ -20,19 +20,19 @@ class TestTiePyList(unittest.TestCase):
         def callback(owner, path, value, action):
             self.assertTrue(callback.owner is owner)
             v = owner
-            end_early = (action in [list.extend, list.__iadd__, list.clear, list.__delitem__])
+            end_early = (action in [list.extend, list.__iadd__, list.clear, list.__delitem__, list.pop, list.remove])
             try:
                 for i in range(len(path) - end_early):
                     step = path[i]
                     v = v[step]
-                if action in [list.__setitem__, list.append]:
+                if action in [list.__setitem__, list.append, list.insert]:
                     self.assertTrue(value is v)
                 if action in [list.__iadd__, list.extend]:
                     self.assertEqual(v[path[-1]:], value) 
                 if action in [list.clear]:
                     self.assertEqual(len(v), 0)
                     self.assertEqual(value, [])
-                if action in [list.__delitem__]:
+                if action in [list.__delitem__, list.pop]:
                     pass
                 self.callback.count[action] += 1
             except Exception as e:
@@ -298,6 +298,25 @@ class TestTiePyList(unittest.TestCase):
         x.unsubscribe(s_id)
         x.insert(2, 10)
         self.assert_count(list.insert, 6)
+
+    def test_one_layered_remove(self):
+        x = tie_pyify([1, 2, 3, 4, 1, 4])
+        self.callback.owner = x
+        s_id = x.subscribe(self.callback)
+     
+        x.remove(1)
+        self.assert_count(list.remove, 1)
+        self.assertEqual(x[0], 2)
+        self.assertEqual(x[3], 1)
+        
+        x.remove(4)
+        self.assert_count(list.remove, 2)
+        self.assertEqual(x[2], 1)
+        self.assertEqual(x[3], 4)
+
+        x.remove(4)
+        self.assert_count(list.remove, 3)
+        self.assertEqual(x[-1], 1)
 
     def _test_one_layered_with_multiple_subscribers(self):
         '''

@@ -181,13 +181,26 @@ def tie_pyify(obj, owners):
             return r
 
 
-        def remove(self, index):
+        def remove(self, value):
             '''
             Wrapper for
 
             Args:
             '''
-            pass
+            val_detected = False
+            for i, v in enumerate(self):
+                if val_detected:
+                    if issubclass(v.__class__, TiePyBase):
+                        self._remove_paths(i, v)
+                        self._tie_pyify(i - 1, v) 
+                elif value == v:
+                    val_detected = True
+
+            r = class_.remove(self, value)
+            self._run_callbacks(self._owners, None, class_.remove)
+            return r
+ 
+            
 
         def pop(self, index=-1):
             index = index if index >= 0 else index + len(self)
