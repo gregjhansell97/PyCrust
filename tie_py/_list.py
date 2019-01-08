@@ -16,10 +16,13 @@ def tie_pyify(obj, owners):
         '''
 
         def __delitem__(self, index):
+            index = index if index >= 0 else index + len(self)
+            if index not in range(len(self)):
+                return class_.__delitem__(self, index)
             values = self[index:] #values to the right of index affected
             for i, v in enumerate(values):
                 if issubclass(v.__class__, TiePyBase):
-                    self._remove_paths(index + i, v) #must remove current index path
+                    self._remove_paths(index + i, v) #must remove current index
                     if i > 0: #add new index path if not the item being deleted
                         self._tie_pyify(index + i - 1, v)
             r = class_.__delitem__(self, index)
@@ -76,16 +79,16 @@ def tie_pyify(obj, owners):
   
             Args:
             '''
-            owner = None
-            #lets keep things positive!
             index = index if index >= 0 else index + len(self)
-            if index in range(len(self)):
-                v = self[index]
-                if v is value:
-                    return class_.__setitem__(self, index, value)
-                elif issubclass(v.__class__, TiePyBase):
-                    self._remove_paths(index, v)
-                owners, value = self._tie_pyify(index, value)
+            if index not in range(len(self)):
+                return class_.__setitem__(self, index)
+
+            v = self[index]
+            if v is value:
+                return class_.__setitem__(self, index, value)
+            elif issubclass(v.__class__, TiePyBase):
+                self._remove_paths(index, v)
+            owners, value = self._tie_pyify(index, value)
             r = class_.__setitem__(self, index, value)
             self._run_callbacks(owners, value, class_.__setitem__)
             return r
@@ -159,6 +162,12 @@ def tie_pyify(obj, owners):
 
             Args:
             '''
+            index = index if index >= 0 else index + len(self)
+            
+            #keeps the insert in range
+            if index > len(self): index = len(self)
+            elif index < 0: index = 0
+            
             values = self[index:] #values to the right of index affected
             for i, v in enumerate(values):
                 if issubclass(v.__class__, TiePyBase):
@@ -166,8 +175,9 @@ def tie_pyify(obj, owners):
                     self._tie_pyify(index + i + 1, v)
                 
             #now we need to set the item so to speak
-            r = class_.pop(self, index)
-            self._run_callbacks(self._owners, None, class_.pop)
+            owners, value = self._tie_pyify(index, value)
+            r = class_.insert(self, index, value)
+            self._run_callbacks(owners, value, class_.insert)
             return r
 
 
@@ -180,10 +190,13 @@ def tie_pyify(obj, owners):
             pass
 
         def pop(self, index=-1):
+            index = index if index >= 0 else index + len(self)
+            if index not in range(len(self)):
+                return class_.pop(self, index)
             values = self[index:] #values to the right of index affected
             for i, v in enumerate(values):
                 if issubclass(v.__class__, TiePyBase):
-                    self._remove_paths(index + i, v) #must remove current index path
+                    self._remove_paths(index + i, v) #must remove current index
                     if i > 0: #add new index path if not the item being deleted
                         self._tie_pyify(index + i - 1, v)
             r = class_.pop(self, index)

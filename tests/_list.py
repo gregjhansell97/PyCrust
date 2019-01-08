@@ -265,8 +265,39 @@ class TestTiePyList(unittest.TestCase):
         x.clear()
         self.assert_count(list.clear, 3)
 
-    def _test_one_layered_insert(self):
-        pass    
+    def test_one_layered_insert(self):
+        x = tie_pyify([1, 2, 3, 4])
+        self.callback.owner = x
+        s_id = x.subscribe(self.callback)
+
+        x.insert(1, 10)
+        self.assert_count(list.insert, 1)
+        self.assertEqual(x[1], 10)
+
+        x.insert(-1, 58)
+        self.assert_count(list.insert, 2)
+        self.assertEqual(x[-2], 58)
+
+        x.insert(len(x), 900)
+        self.assert_count(list.insert, 3)
+        self.assertEqual(x[-1], 900)
+
+        x.insert(10000, -4)
+        self.assert_count(list.insert, 4)
+        self.assertEqual(x[-1], -4)
+
+        x.insert(-100, 2)
+        self.assert_count(list.insert, 5)
+        self.assertEqual(x[0], 2)
+
+        x.insert(0, 12)
+        self.assert_count(list.insert, 6)
+        self.assertEqual(x[0], 12)
+        
+        #unsubscribing
+        x.unsubscribe(s_id)
+        x.insert(2, 10)
+        self.assert_count(list.insert, 6)
 
     def _test_one_layered_with_multiple_subscribers(self):
         '''
