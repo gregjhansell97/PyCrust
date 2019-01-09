@@ -318,6 +318,27 @@ class TestTiePyList(unittest.TestCase):
         self.assert_count(list.remove, 3)
         self.assertEqual(x[-1], 1)
 
+    def test_one_layered_reversed(self):
+        x = tie_pyify([1, 2, 3, 4])
+        self.callback.owner = x
+        s_id = x.subscribe(self.callback)
+ 
+        x.reverse()
+        self.assert_count(list.reverse, 1)
+        self.assertEqual(x, [4, 3, 2, 1])
+        
+        x.pop()
+        x.reverse()
+        self.assert_count(list.reverse, 2)
+        self.assert_count(list.pop, 1)
+        self.assertEqual(x, [2, 3, 4])
+        
+        x.clear()
+        x.reverse()
+        self.assert_count(list.reverse, 3)
+        self.assert_count(list.clear, 1)
+        self.assertEqual(x, [])
+
     def _test_one_layered_with_multiple_subscribers(self):
         '''
         Testing multiple subscribers on a dictionary

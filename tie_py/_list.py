@@ -217,8 +217,13 @@ def tie_pyify(obj, owners):
             return r
 
         def reverse(self):
-            pass
-
-
+            max_index = len(self) - 1
+            for i, v in enumerate(self):
+                if issubclass(v.__class__, TiePyBase):
+                    self._remove_paths(i, v)
+                    self._tie_pyify(max_index - i)
+            r = class_.reverse(self)
+            self._run_callbacks(self._owners, self, class_.reverse)
+            return r
 
     return TiePyList(obj, owners)
