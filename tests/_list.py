@@ -339,6 +339,19 @@ class TestTiePyList(unittest.TestCase):
         self.assert_count(list.clear, 1)
         self.assertEqual(x, [])
 
+    def test_one_layered_imul(self):
+        x = tie_pyify([1, 2, 3])
+        self.callback.owner = x
+        s_id = x.subscribe(self.callback)
+
+        x *= 3
+        self.assert_count(list.__imul__, 1)
+        self.assertEqual(x, [1, 2, 3, 1, 2, 3, 1, 2, 3])
+
+        x *= -5
+        self.assert_count(list.__imul__, 2)
+        self.assetEqual(x, [])
+
     def _test_one_layered_with_multiple_subscribers(self):
         '''
         Testing multiple subscribers on a dictionary
