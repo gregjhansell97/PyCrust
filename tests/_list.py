@@ -59,32 +59,28 @@ class TestTiePyList(unittest.TestCase):
 
         x[0] = 1
         self.assert_count(list.__setitem__, 0)
-        self.assertEqual(x[0], 1)
+        self.assertEqual(x, [1, 2, 3])
         
         x[0] = 0
         self.assert_count(list.__setitem__, 1)
-        self.assertEqual(x[0], 0)
-        
-        x[1] = 4
-        self.assert_count(list.__setitem__, 2)
-        self.assertEqual(x[1], 4)
+        self.assertEqual(x, [0, 2, 3])
         
         x[2] = -100
-        self.assert_count(list.__setitem__, 3)
-        self.assertEqual(x[2], -100)
+        self.assert_count(list.__setitem__, 2)
+        self.assertEqual(x, [0, 2, -100])
         
         x[0] += 1
-        self.assert_count(list.__setitem__, 4)
-        self.assertEqual(x[0], 1)
+        self.assert_count(list.__setitem__, 3)
+        self.assertEqual(x, [1, 2, -100])
 
         x[-1] = 12
-        self.assert_count(list.__setitem__, 5)
-        self.assertEqual(x[-1], 12)
+        self.assert_count(list.__setitem__, 4)
+        self.assertEqual(x, [1, 2, 12])
 
         #unsubscribing
         x.unsubscribe(s_id)
         x[2] = 25
-        self.assert_count(list.__setitem__, 5)
+        self.assert_count(list.__setitem__, 4)
         self.assertEqual(x[2], 25)
 
     def test_one_layered_append(self):
@@ -98,15 +94,18 @@ class TestTiePyList(unittest.TestCase):
 
         x.append(0)
         self.assert_count(list.append, 1)
+        self.assertEqual(x, [0])
         x[0] = 12
         self.assert_count(list.__setitem__, 1)
 
         x.append(2)
         self.assert_count(list.append, 2)
+        self.assertEqual(x, [12, 2])
         x[1] = 32
         self.assert_count(list.__setitem__, 2)
 
         x.append(3)
+        self.assertEqual(x, [12, 32, 3])
         self.assert_count(list.append, 3)
 
         #unsubscribing
@@ -123,16 +122,15 @@ class TestTiePyList(unittest.TestCase):
 
         del x[2]
         self.assert_count(list.__delitem__, 1)
-        self.assertEqual(len(x), 2)
+        self.assertEqual(x, [1, 2])
 
         del x[0]
         self.assert_count(list.__delitem__, 2)
-        self.assertEqual(len(x), 1)
-        self.assertEqual(x[0], 2)
+        self.assertEqual(x, [2])
 
         del x[-1]
         self.assert_count(list.__delitem__, 3)
-        self.assertEqual(len(x), 0)
+        self.assertEqual(x, [])
  
         x.append(2)
         x.append(1)
@@ -141,9 +139,7 @@ class TestTiePyList(unittest.TestCase):
    
         del x[-2]
         self.assert_count(list.__delitem__, 4)
-        self.assertEqual(len(x), 2)
-        self.assertEqual(x[1], 2)
-        self.assertEqual(x[0], 2)
+        self.assertEqual(x, [2, 2])
  
         x.unsubscribe(s_id)
         del x[0]
@@ -154,30 +150,27 @@ class TestTiePyList(unittest.TestCase):
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
-        x.pop(2)
+        self.assertEqual(x.pop(2), 3)
         self.assert_count(list.pop, 1)
         self.assert_count(list.__delitem__, 0)
-        self.assertEqual(len(x), 2)
+        self.assertEqual(x, [1, 2])
 
-        x.pop(0)
+        self.assertEqual(x.pop(0), 1)
         self.assert_count(list.pop, 2)
-        self.assertEqual(len(x), 1)
-        self.assertEqual(x[0], 2)
+        self.assertEqual(x, [2])
 
-        x.pop()
+        self.assertEqual(x.pop(), 2)
         self.assert_count(list.pop, 3)
-        self.assertEqual(len(x), 0)
+        self.assertEqual(x, [])
  
         x.append(2)
         x.append(1)
         x.append(2)
         self.assert_count(list.append, 3)
    
-        x.pop(-2)
+        self.assertEqual(x.pop(-2), 1)
         self.assert_count(list.pop, 4)
-        self.assertEqual(len(x), 2)
-        self.assertEqual(x[1], 2)
-        self.assertEqual(x[0], 2)
+        self.assertEqual(x, [2, 2])
  
         x.unsubscribe(s_id)
         x.pop(0)
@@ -198,13 +191,8 @@ class TestTiePyList(unittest.TestCase):
         x.extend([1])
         self.assert_count(list.extend, 2)
  
-        self.assertEqual(len(x), 5)
-        self.assertEqual(x[0], 1)
-        self.assertEqual(x[1], 2)
-        self.assertEqual(x[2], 4)
-        self.assertEqual(x[3], 5)
-        self.assertEqual(x[4], 1)
-       
+        self.assertEqual(x, [1, 2, 4, 5, 1])
+
         #unsubscribing
         x.unsubscribe(s_id)
         x.extend([2, 3])
@@ -226,12 +214,7 @@ class TestTiePyList(unittest.TestCase):
         x += [1]
         self.assert_count(list.__iadd__, 2)
  
-        self.assertEqual(len(x), 5)
-        self.assertEqual(x[0], 1)
-        self.assertEqual(x[1], 2)
-        self.assertEqual(x[2], 4)
-        self.assertEqual(x[3], 5)
-        self.assertEqual(x[4], 1)
+        self.assertEqual(x, [1, 2, 4, 5, 1])
        
         #unsubscribing
         x.unsubscribe(s_id)
@@ -272,27 +255,27 @@ class TestTiePyList(unittest.TestCase):
 
         x.insert(1, 10)
         self.assert_count(list.insert, 1)
-        self.assertEqual(x[1], 10)
+        self.assertEqual(x, [1, 10, 2, 3, 4])
 
         x.insert(-1, 58)
         self.assert_count(list.insert, 2)
-        self.assertEqual(x[-2], 58)
+        self.assertEqual(x, [1, 10, 2, 3, 58, 4])
 
         x.insert(len(x), 900)
         self.assert_count(list.insert, 3)
-        self.assertEqual(x[-1], 900)
+        self.assertEqual(x, [1, 10, 2, 3, 58, 4, 900])
 
         x.insert(10000, -4)
         self.assert_count(list.insert, 4)
-        self.assertEqual(x[-1], -4)
+        self.assertEqual(x, [1, 10, 2, 3, 58, 4, 900, -4])
 
         x.insert(-100, 2)
         self.assert_count(list.insert, 5)
-        self.assertEqual(x[0], 2)
+        self.assertEqual(x, [2, 1, 10, 2, 3, 58, 4, 900, -4])
 
         x.insert(0, 12)
         self.assert_count(list.insert, 6)
-        self.assertEqual(x[0], 12)
+        self.assertEqual(x, [12, 2, 1, 10, 2, 3, 58, 4, 900, -4])
         
         #unsubscribing
         x.unsubscribe(s_id)
@@ -306,17 +289,15 @@ class TestTiePyList(unittest.TestCase):
      
         x.remove(1)
         self.assert_count(list.remove, 1)
-        self.assertEqual(x[0], 2)
-        self.assertEqual(x[3], 1)
+        self.assertEqual(x, [2, 3, 4, 1, 4])
         
         x.remove(4)
         self.assert_count(list.remove, 2)
-        self.assertEqual(x[2], 1)
-        self.assertEqual(x[3], 4)
+        self.assertEqual(x, [2, 3, 1, 4])
 
         x.remove(4)
         self.assert_count(list.remove, 3)
-        self.assertEqual(x[-1], 1)
+        self.assertEqual(x, [2, 3, 1])
 
     def test_one_layered_reversed(self):
         x = tie_pyify([1, 2, 3, 4])
