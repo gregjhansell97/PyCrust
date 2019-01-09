@@ -350,7 +350,7 @@ class TestTiePyList(unittest.TestCase):
 
         x *= -5
         self.assert_count(list.__imul__, 2)
-        self.assetEqual(x, [])
+        self.assertEqual(x, [])
 
     def _test_one_layered_with_multiple_subscribers(self):
         '''

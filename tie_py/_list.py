@@ -63,10 +63,10 @@ def tie_pyify(obj, owners):
                     if issubclass(v.__class__, TiePyBase):
                         self._remove_paths(i, v)
             elif value > 1: #gotta add new paths
-                distance = len(self)
+                length = len(self)
                 for i in range(1, value):
                     for j, v in enumerate(self):
-                        self._tie_pytify(j + distance*i, v)
+                        self._tie_pyify(j + length*i, v)
             else:
                 return class_.__imul__(self, value)
             r = class_.__imul__(self, value)
