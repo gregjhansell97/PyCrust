@@ -26,7 +26,7 @@ def tie_pyify(obj, owners):
                     if i > 0: #add new index path if not the item being deleted
                         self._tie_pyify(index + i - 1, v)
             r = class_.__delitem__(self, index)
-            self._run_callbacks(self._owners, None, class_.__delitem__)
+            self._run_callbacks(class_.__delitem__, (self, index))
             return r
 
         def __iadd__(self, itr):
@@ -37,18 +37,12 @@ def tie_pyify(obj, owners):
             '''
             #same as extend code
             start = len(self)
-            tp_itr_2, tp_itr_1  = tee(map(
+            tp_itr  = map(
                 lambda iv: self._tie_pyify(start + iv[0], iv[1]), enumerate(itr)
-            ))
-            values = map(lambda owner_value: owner_value[1], tp_itr_1)
-            r = class_.__iadd__(self, values)
+            )
 
-            try:
-                owners, value = next(tp_itr_2)
-            except StopIteration: 
-                pass
-            else:
-                self._run_callbacks(owners, self[start:], class_.__iadd__)
+            r = class_.__iadd__(self, tp_itr)
+            self._run_callbacks(class_.__iadd__,  (self, self[start:]))
             return r
 
         def __imul__(self, value):
@@ -70,7 +64,7 @@ def tie_pyify(obj, owners):
             else:
                 return class_.__imul__(self, value)
             r = class_.__imul__(self, value)
-            self._run_callbacks(self._owners, self, class_.__imul__)
+            self._run_callbacks(class_.__imul__, (self, value))
             return r
 
         def __setitem__(self, index, value):
@@ -88,9 +82,9 @@ def tie_pyify(obj, owners):
                 return class_.__setitem__(self, index, value)
             elif issubclass(v.__class__, TiePyBase):
                 self._remove_paths(index, v)
-            owners, value = self._tie_pyify(index, value)
+            value = self._tie_pyify(index, value)
             r = class_.__setitem__(self, index, value)
-            self._run_callbacks(owners, value, class_.__setitem__)
+            self._run_callbacks(class_.__setitem__, (self, index, value))
             return r
 
         def _copy(self, obj):
@@ -115,9 +109,9 @@ def tie_pyify(obj, owners):
             Args:
             '''
             step = len(self)
-            owners, value = self._tie_pyify(step, value)
+            value = self._tie_pyify(step, value)
             r = class_.append(self, value)
-            self._run_callbacks(owners, value, class_.append)
+            self._run_callbacks(class_.append, (self, value))
             return r
 
         def clear(self):
@@ -130,7 +124,7 @@ def tie_pyify(obj, owners):
                 if issubclass(v.__class__, TiePyBase):
                     self._remove_paths(i, v)
             r = class_.clear(self)
-            self._run_callbacks(self._owners, self, class_.clear)
+            self._run_callbacks(class_.clear, (self,))
             return r
 
 
@@ -140,20 +134,13 @@ def tie_pyify(obj, owners):
  
             Args:
             '''
-            #same code as extend
             start = len(self)
-            tp_itr_2, tp_itr_1  = tee(map(
+            tp_itr  = map(
                 lambda iv: self._tie_pyify(start + iv[0], iv[1]), enumerate(itr)
-            ))
-            values = map(lambda owner_value: owner_value[1], tp_itr_1)
-            r = class_.extend(self, values)
+            )
+            r = class_.extend(self, tp_itr)
 
-            try:
-                owners, value = next(tp_itr_2)
-            except StopIteration: 
-                pass
-            else:
-                self._run_callbacks(owners, self[start:], class_.extend)
+            self._run_callbacks(class_.extend, (self, self[start:]))
             return r
 
         def insert(self, index, value):
@@ -175,9 +162,9 @@ def tie_pyify(obj, owners):
                     self._tie_pyify(index + i + 1, v)
                 
             #now we need to set the item so to speak
-            owners, value = self._tie_pyify(index, value)
+            value = self._tie_pyify(index, value)
             r = class_.insert(self, index, value)
-            self._run_callbacks(owners, value, class_.insert)
+            self._run_callbacks(class_.insert, (self, index, value))
             return r
 
 
@@ -197,7 +184,7 @@ def tie_pyify(obj, owners):
                     val_detected = True
 
             r = class_.remove(self, value)
-            self._run_callbacks(self._owners, None, class_.remove)
+            self._run_callbacks(class_.remove, (self, value))
             return r
  
             
@@ -213,7 +200,7 @@ def tie_pyify(obj, owners):
                     if i > 0: #add new index path if not the item being deleted
                         self._tie_pyify(index + i - 1, v)
             r = class_.pop(self, index)
-            self._run_callbacks(self._owners, None, class_.pop)
+            self._run_callbacks(class_.pop, (self, index))
             return r
 
         def reverse(self):
@@ -223,7 +210,7 @@ def tie_pyify(obj, owners):
                     self._remove_paths(i, v)
                     self._tie_pyify(max_index - i)
             r = class_.reverse(self)
-            self._run_callbacks(self._owners, self, class_.reverse)
+            self._run_callbacks(class_.reverse, (self,))
             return r
 
     return TiePyList(obj, owners)

@@ -17,7 +17,7 @@ class TestTiePyDicts(unittest.TestCase):
         Called before every test function, must set static obj
         in the test function itself
         '''
-        def callback(owner, path, value, action):
+        def callback(owner, path, method, args):
             path = list(path) 
             self.assertTrue(callback.owner is owner)
             
@@ -28,27 +28,30 @@ class TestTiePyDicts(unittest.TestCase):
                 if k in v:
                     v = v[k]
                 else:
-                    v = None
-                    break
-
-            if action == dict.__setitem__:
-                self.assertTrue(value is v)
-            elif action == dict.__delitem__:
-                self.assertTrue(value is None)
+                    self.assertTrue(False)
+            if method == dict.__setitem__:
+                obj, key, value = args
+                self.assertTrue(obj is v)
+                self.assertTrue(key in v)
+                self.assertTrue(value is v[key])
+            elif method == dict.__delitem__:
+                obj, key = args
+                self.assertTrue(obj is v)
+                self.assertTrue(key not in v)
                 self.assertTrue(len(path) == 0)
             else:
                 self.assertTrue(False)
     
-            self.callback.count[action] += 1
+            self.callback.count[method] += 1
 
         self.callback = callback
-        self.callback.count = defaultdict(lambda: 0) #default, all actions have been called 0 times
+        self.callback.count = defaultdict(lambda: 0)
 
-    def assert_count(self, action, expected_count):
+    def assert_count(self, method, expected_count):
         '''
         asserts the count is correct for a given action
         '''
-        self.assertEqual(self.callback.count[action], expected_count)
+        self.assertEqual(self.callback.count[method], expected_count)
 
     def test_one_layered_pre_initialized(self):
         '''
@@ -306,7 +309,7 @@ class TestTiePyDicts(unittest.TestCase):
         self.callback.owner = x
         s_id = x.subscribe(self.callback)
 
-        def callback_1(owner, path, value, action):
+        def callback_1(owner, path, method, args):
             self.assertTrue(callback_1.owner is owner)
             v = owner
             path = list(path)
@@ -315,16 +318,19 @@ class TestTiePyDicts(unittest.TestCase):
                 if k in v:
                     v = v[k]
                 else:
-                    v = None
-                    break
-            if action == dict.__setitem__:
-                self.assertTrue(value is v)
+                    self.assertTrue(False)
+            if method == dict.__setitem__:
+                obj, key, value = args
+                self.assertTrue(obj is v)
+                self.assertTrue(key in v)
+                self.assertTrue(value is v[key])
             elif action == dict.__delitem__:
-                self.assertTrue(value is None)
-                self.assertTrue(len(path) == 0)
+                obj, key = args
+                self.assertTrue(obj is v)
+                self.assertTrue(key not in v)
             else:
                 self.assertTrue(False)
-            callback_1.count[action] += 1
+            callback_1.count[method] += 1
         callback_1.count = defaultdict(lambda: 0)
 
         def assert_count_1(action, expected_count):

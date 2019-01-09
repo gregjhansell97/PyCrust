@@ -17,35 +17,50 @@ class TestTiePyList(unittest.TestCase):
         Called before every test function, must set static obj
         in the test function itself
         '''
-        def callback(owner, path, value, action):
+        def callback(owner, path, method, args):
             self.assertTrue(callback.owner is owner)
             v = owner
-            end_early = (action in [list.extend, list.__iadd__, list.clear, list.__delitem__, list.pop, list.remove])
             try:
-                for i in range(len(path) - end_early):
+                for i in range(len(path)):
                     step = path[i]
                     v = v[step]
-                if action in [list.__setitem__, list.append, list.insert]:
-                    self.assertTrue(value is v)
-                if action in [list.__iadd__, list.extend]:
-                    self.assertEqual(v[path[-1]:], value) 
-                if action in [list.clear]:
-                    self.assertEqual(len(v), 0)
-                    self.assertEqual(value, [])
-                if action in [list.__delitem__, list.pop]:
-                    pass
-                self.callback.count[action] += 1
+                self.assertTrue(args[0] is v)
+                if method in [list.__delitem__, list.pop]:
+                    pass #what can you check here? indexes are shifted
+                elif method in [list.__iadd__, list.extend]:
+                    obj, itr = args
+                    for i in range(-1, -len(itr) - 1, -1): #go backwards
+                        self.assertTrue(v[i] is itr[i])
+                elif method is list.__imul__:
+                    pass #is there a way you can check here?
+                elif method in [list.__setitem__, list.insert]:
+                    obj, index, value = args
+                    self.assertTrue(index in range(len(v)))
+                    self.assertTrue(value is v[index])
+                elif method is list.append:
+                    obj, value = args
+                    self.assertTrue(len(v) > 0)
+                    self.assertTrue(v[-1] is value)
+                elif method is list.clear:
+                    obj, = args
+                    self.assertEqual(v, [])
+                elif method is list.remove:
+                    pass #not sure how you would check this
+                elif method is list.reverse:
+                    pass #not sure how you would check this
+
+                self.callback.count[method] += 1
             except Exception as e:
                 print(e)
                 self.assertTrue(False)
 
         self.callback = callback
         self.callback.count = defaultdict(lambda: 0)
-    def assert_count(self, action, expected_count):
+    def assert_count(self, method, expected_count):
         '''
         asserts the count is correct for a given action
         '''
-        self.assertEqual(self.callback.count[action], expected_count)
+        self.assertEqual(self.callback.count[method], expected_count)
 
     def test_one_layered_set(self):
         '''
@@ -186,17 +201,17 @@ class TestTiePyList(unittest.TestCase):
         self.assert_count(list.extend, 1)
 
         x.extend([])
-        self.assert_count(list.extend, 1)
+        self.assert_count(list.extend, 2)
     
         x.extend([1])
-        self.assert_count(list.extend, 2)
+        self.assert_count(list.extend, 3)
  
         self.assertEqual(x, [1, 2, 4, 5, 1])
 
         #unsubscribing
         x.unsubscribe(s_id)
         x.extend([2, 3])
-        self.assert_count(list.extend, 2)
+        self.assert_count(list.extend, 3)
         self.assertEqual(x[-2:], [2, 3])
 
     def test_one_layered_iadd(self):
@@ -209,17 +224,17 @@ class TestTiePyList(unittest.TestCase):
         self.assert_count(list.__iadd__, 1)
 
         x += []
-        self.assert_count(list.__iadd__, 1)
+        self.assert_count(list.__iadd__, 2)
     
         x += [1]
-        self.assert_count(list.__iadd__, 2)
+        self.assert_count(list.__iadd__, 3)
  
         self.assertEqual(x, [1, 2, 4, 5, 1])
        
         #unsubscribing
         x.unsubscribe(s_id)
         x += [2, 3]
-        self.assert_count(list.__iadd__, 2)
+        self.assert_count(list.__iadd__, 3)
 
     def test_one_layered_clear(self):
         x = tie_pyify([1, 2, 3, 4])

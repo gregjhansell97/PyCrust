@@ -60,27 +60,27 @@ class TiePyBase:
         owners = defaultdict(set)
         for o, paths in self._owners.items():
             owners[o] = {p + (step,) for p in paths}
-        return (owners, tie_py._factory.tie_pyify(value, owners))
+        return tie_py._factory.tie_pyify(value, owners)
 
-    def _run_callbacks(self, owners, value, action):
+    def _run_callbacks(self, method, args):
         '''
         executes all callbacks passing along the arguments above
 
         Args:
             step (obj): the step in the current path from owner to value
-            value (obj): the new value (None if deleted)
-            action (Action Enum): what action was done to get to that value
+            method (function): the method causing the callback invocation
+            args (tuple): the arguments in method (self, value)
         '''
         if not self._publish:
             return
 
-        for owner, paths in owners.items():
+        for owner, paths in self._owners.items():
             for callback in owner._callbacks.values():
                 callback(
                     owner=owner,
                     path=next(iter(paths)),
-                    value=value,
-                    action=action
+                    method=method,
+                    args=args
                 )
 
 
