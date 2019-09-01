@@ -10,24 +10,57 @@ __license__ = "mit"
 
 
 @observable
-class Animal:
-    def __init__(self, name="animal", age=10):
-        self._name = name
-        self._age = age
+class Dog:
+    YES = 1
+    NO = 2
+    def __init__(self, name="dogo", age=0):
+        self.name = name
+        self.age = age
+        self.commands = set()
+    def bark(self):
+        return "wuff"
+    def teach(self, cmd:str):
+        self.commands.add(cmd.lower())
+    def say(self, cmd:str):
+        if cmd.lower() in self.commands:
+            return Dog.YES
+        else:
+            return Dog.NO
     def set_name(self, name):
         self._name = name
 
 
 def test_one_subscribe():
-    def callback(name: str):
-        if(obj.set_name == method):
-            pass
-    a = Animal()
-    a.set_name("greg")
-    a.subscribe(Animal.set_name, callback)
+    def on_teach(dog, retval, cmd:str):
+        assert cmd in dog.commands
+    def on_age_change(dog, old_value, new_value):
+        assert old_value + 1 == new_value
+    d = Dog("bosco", 10)
+    d.teach("sit")
+    d.subscribe("teach", on_teach)
+    d.teach("roll over")
+    d.age = 11
+    d.subscribe("age", on_age_change)
+    d.age += 1
 
 def test_multiple_subscribe():
-    pass
+    def on_teach(dog, retval, cmd:str):
+        assert cmd in dog.commands
+    def on_bark(dog, retval):
+        assert retval == "wuff"
+    def on_say(dog, retval, cmd:str):
+        if cmd.lower() in dog.commands:
+            assert retval == Dog.YES
+        else:
+            assert retval == Dog.NO
+    d = Dog("bosco", 10)
+    d.subscribe("teach", on_teach)
+    d.subscribe("bark", on_bark)
+    d.teach("sit")
+    d.bark()
+    d.subscribe("say", on_say)
+    assert d.say("sit") == Dog.YES
+    assert d.say("roll over") == Dog.NO
     '''
     def callback(name: str):
         pass
