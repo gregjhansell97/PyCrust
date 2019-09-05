@@ -29,10 +29,20 @@ class Dog:
     def set_name(self, name):
         self._name = name
 
+def countable(func):
+    def wrapper(*args, **kwargs):
+        wrapper.count += 1
+        func(*args, **kwargs)
+    wrapper.count = 0
+    return wrapper
+
+#TODO test fixtures
 
 def test_one_subscribe():
+    @countable
     def on_teach(dog, retval, cmd:str):
         assert cmd in dog.commands
+    @countable
     def on_age_change(dog, old_value, new_value):
         assert old_value + 1 == new_value
     d = Dog("bosco", 10)
@@ -42,12 +52,17 @@ def test_one_subscribe():
     d.age = 11
     d.subscribe("age", on_age_change)
     d.age += 1
+    assert on_teach.count == 1
+    assert on_age_change.count == 1
 
 def test_multiple_subscribe():
+    @countable
     def on_teach(dog, retval, cmd:str):
         assert cmd in dog.commands
+    @countable
     def on_bark(dog, retval):
         assert retval == "wuff"
+    @countable
     def on_say(dog, retval, cmd:str):
         if cmd.lower() in dog.commands:
             assert retval == Dog.YES
@@ -61,6 +76,12 @@ def test_multiple_subscribe():
     d.subscribe("say", on_say)
     assert d.say("sit") == Dog.YES
     assert d.say("roll over") == Dog.NO
+    assert on_teach.count == 1
+    assert on_bark.count == 1
+    assert on_say.count == 2
+
+# TODO test subscription type
+
     '''
     def callback(name: str):
         pass
