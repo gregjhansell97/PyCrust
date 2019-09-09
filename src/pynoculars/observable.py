@@ -1,15 +1,29 @@
+import weakref
 
 def _monitor(instance, name: str, method):
      def wrapper_function(*args, **kwargs):
          retval = method(*args, **kwargs)
          #TODO callback is a list of methods, need to get those via key name
-         if name not in instance._callbacks:
-             instance._callbacks[name] = []
-         for cb in instance._callbacks[name]:
-             cb(instance, retval, *args, **kwargs)
+         if name not in instance._subscribers:
+             instance._subscribers[name] = []
+         for s in instance._subscribers[name]:
+             s.callback(instance, retval, *args, **kwargs)
          return retval
      return wrapper_function
 
+
+class Subscription:
+    '''
+    '''
+    def __init__(self, observed_instance, name, callback):
+        self._observed_weak_ref = weakref.ref(observed_instance) 
+        self.name = name
+        self.callback = callback
+    def unsubscribe(self):
+        instance = self._observed_weak_ref()
+        if instance is None:
+            raise ReferenceError
+        instance._subscribers[self.name].remove(self)
 
 def observable(class_):
     class WrapperClass(class_):
@@ -19,7 +33,7 @@ def observable(class_):
             self._callbacks(dict): TODO explanation
         '''
         def __init__(self, *args, **kwargs):
-            self._callbacks = dict()
+            self._subscribers = dict()
             super(WrapperClass, self).__init__(*args, **kwargs)
         def __getattribute__(self, name: str):
             '''
@@ -53,10 +67,10 @@ def observable(class_):
             except AttributeError:
                 old_value = None
             parent.__setattr__(name, value)
-            if name not in self._callbacks:
-                self._callbacks[name] = []
-            for cb in self._callbacks[name]:
-                cb(self, old_value, value)
+            if name not in self._subscribers:
+                self._subscribers[name] = []
+            for s in self._subscribers[name]:
+                s.callback(self, old_value, value)
         def subscribe(self, name: str, callback):
             '''
             registers a callback to a specified attribute name (when it gets
@@ -66,9 +80,10 @@ def observable(class_):
                 name(str): name of attribute, can refer to both a method or
                     object instance
             '''
-            if name not in self._callbacks:
-                self._callbacks[name] = []
-            self._callbacks[name].append(callback)
-    return WrapperClass
-     
-           
+            # throw if not an attribute
+            sub = Subscription(self, name, callback)
+            if name not in self._subscribers:
+                self._subscribers[name] = []
+            self._subscribers[name].append(sub)
+            return sub
+    return WrapperClass 
