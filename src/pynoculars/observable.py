@@ -80,7 +80,10 @@ def observable(class_):
                 name(str): name of attribute, can refer to both a method or
                     object instance
             '''
+            
             # throw if not an attribute
+            parent = super(WrapperClass, self)
+            parent.__getattribute__(name)
             sub = Subscription(self, name, callback)
             if name not in self._subscribers:
                 self._subscribers[name] = []
