@@ -48,6 +48,7 @@ MANIFEST
 # Per-project virtualenvs
 .venv*/
 *-env/
+env/
 
 # Costom ignores
 sandbox.py
