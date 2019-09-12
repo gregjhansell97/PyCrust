@@ -26,6 +26,24 @@ def test_one_subscribe():
     assert callbacks.on_teach.count == 1
     assert callbacks.on_age_change.count == 1
 
+def test_one_subscribe_invalid_attribute():
+    d = Dog("bosco", 10)
+    callbacks = dog_callbacks()
+    try:
+        sub = d.subscribe("dog_years", callbacks.on_age_change)
+    except AttributeError:
+        assert True
+    except:
+        assert False
+    else:
+        assert False
+    d.dog_years = 10
+    d.subscribe("dog_years", callbacks.on_age_change)
+    d.dog_years += 1
+    assert callbacks.on_age_change.count == 1
+    
+    
+
 def test_subscription_out_of_scope():
     d = Dog("bosco", 10)
     callbacks = dog_callbacks()
