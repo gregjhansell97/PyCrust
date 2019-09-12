@@ -1,29 +1,5 @@
-import weakref
-
-def _monitor(instance, name: str, method):
-     def wrapper_function(*args, **kwargs):
-         retval = method(*args, **kwargs)
-         #TODO callback is a list of methods, need to get those via key name
-         if name not in instance._subscribers:
-             instance._subscribers[name] = []
-         for s in instance._subscribers[name]:
-             s.callback(instance, retval, *args, **kwargs)
-         return retval
-     return wrapper_function
-
-
-class Subscription:
-    '''
-    '''
-    def __init__(self, observed_instance, name, callback):
-        self._observed_weak_ref = weakref.ref(observed_instance) 
-        self.name = name
-        self.callback = callback
-    def unsubscribe(self):
-        instance = self._observed_weak_ref()
-        if instance is None:
-            raise ReferenceError
-        instance._subscribers[self.name].remove(self)
+from pynoculars.subscription import Subscription
+ 
 
 def observable(class_):
     class WrapperClass(class_):
@@ -48,8 +24,8 @@ def observable(class_):
             parent = super(WrapperClass, self)
             attr = parent.__getattribute__(name)
             method_type = type(parent.__getattribute__("__init__"))
-            if type(attr) == method_type:
-                return _monitor(self, name, attr)
+            if type(attr) == method_type and name != "_monitor":
+                return self._monitor(name, attr)
             else:
                 return attr
         def __setattr__(self, name: str, value):
@@ -71,6 +47,19 @@ def observable(class_):
                 self._subscribers[name] = []
             for s in self._subscribers[name]:
                 s.callback(self, old_value, value)
+        def _monitor(self, name: str, method):
+            '''
+            decorator that monitors when a function/method is invoked and
+            invokes callbacks related to the method
+            '''
+            def wrapper_function(*args, **kwargs):
+                retval = method(*args, **kwargs)
+                if name not in self._subscribers:
+                    self._subscribers[name] = []
+                for s in self._subscribers[name]:
+                    s.callback(self, retval, *args, **kwargs)
+                return retval
+            return wrapper_function
         def subscribe(self, name: str, callback):
             '''
             registers a callback to a specified attribute name (when it gets
