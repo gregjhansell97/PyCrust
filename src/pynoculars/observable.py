@@ -1,20 +1,29 @@
+import types
+
 from pynoculars.subscription import Subscription
  
 
 def observable(class_):
     class WrapperClass(class_):
         '''
+        inherits from parent class and wraps attribute getters and setters so 
+        that certain attributes can be monitored
 
         Attributes:
-            self._callbacks(dict): TODO explanation
+            self._subscribers(dict()): a dictionary of lists of Subscriptions
+                on each attribute
+            self._async_subscribers(dict()): a dictionary of list of 
+                AsyncSubscriptions on each attribute
         '''
         def __init__(self, *args, **kwargs):
             self._subscribers = dict()
+            # any arguments/keyword arguments are for class_
             super(WrapperClass, self).__init__(*args, **kwargs)
         def __getattribute__(self, name: str):
             '''
             called when attribute is accessed; if attribute is a method the 
-            overriding behavior is to "decorate" method with _monitor
+            overriding behavior is to "decorate" method with self._monitor,
+            unless method being accessed is monitor
 
             Args:
                 name(str): name of accessed attribute
@@ -51,15 +60,22 @@ def observable(class_):
             '''
             decorator that monitors when a function/method is invoked and
             invokes callbacks related to the method
+            
+            Args:
+                name(str): name of method attribute
+                method(class_.Method): method attribute
+            Returns:
+                class_.Method: method bound to instance
+                
             '''
-            def wrapper_function(*args, **kwargs):
+            def wrapper_function(self, *args, **kwargs):
                 retval = method(*args, **kwargs)
                 if name not in self._subscribers:
                     self._subscribers[name] = []
                 for s in self._subscribers[name]:
                     s.callback(self, retval, *args, **kwargs)
                 return retval
-            return wrapper_function
+            return types.MethodType(wrapper_function, self)
         def subscribe(self, name: str, callback):
             '''
             registers a callback to a specified attribute name (when it gets
