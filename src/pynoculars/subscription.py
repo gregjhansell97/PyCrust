@@ -12,3 +12,6 @@ class Subscription:
         if instance is None:
             raise ReferenceError
         instance._subscribers[self.name].remove(self)
+
+class AsyncSubscription(Subscription):
+    pass
