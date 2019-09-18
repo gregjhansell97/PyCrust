@@ -30,10 +30,10 @@ Consistency
 
   A.method_1 == A.method_1
   A.method_1 is A.method_1
+  A.method_1 != instance_a.method_1
+  instance_a.method_1 is not instance_a.method_1
   instance_a.method_1 == instance_a.method_1
-  instance_a.method_1 is instance_a.method_1
   instance_b.method_1 != instance_a.method_1
-  instance_b.method_1 is not instance_a.method_1
 
 References
 ~~~~~~~~~~~~~~~~
@@ -43,10 +43,12 @@ Maintains internal references and can be held externally
 .. code:: python
 
     # internal references
-    A.method_1.some_attribute = 10
+    A.method_1.__dict__["some_attribute"] = 10
     A.method_1.some_attribute == 10
     # external references
     m = instance_a.method_1
+    m is not instance_a.method_1
+    m == instance_a.method_1
     m() # invokes instance_a's method
     
 
