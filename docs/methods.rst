@@ -12,6 +12,18 @@ A method is a function bound to an object in python. Normally an object binds a 
 
 Properties
 ----------
+
+It Works
+~~~~~~~~
+.. code:: python
+
+    instance_a.method_1() #invokes as expected
+    A.method_1(instance_a) #invokes as expected
+    
+Timing
+~~~~~~
+Has a distinct start and end to the method
+
 Consistency
 ~~~~~~~~~~~
 .. code:: python
@@ -22,4 +34,27 @@ Consistency
   instance_a.method_1 is instance_a.method_1
   instance_b.method_1 != instance_a.method_1
   instance_b.method_1 is not instance_a.method_1
-  
+
+References
+~~~~~~~~~~~~~~~~
+
+Maintains internal references and can be held externally
+
+.. code:: python
+
+    # internal references
+    A.method_1.some_attribute = 10
+    A.method_1.some_attribute == 10
+    # external references
+    m = instance_a.method_1
+    m() # invokes instance_a's method
+    
+
+Decoratable
+~~~~~~~~~~~
+
+.. code:: python
+    
+    class A:
+        @decorator_1
+        def method_1(self)
