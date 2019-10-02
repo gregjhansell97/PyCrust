@@ -31,4 +31,17 @@ def dog_callbacks():
         @countable
         def on_teach(dog, retval, cmd:str):
             assert cmd in dog.commands
+        @staticmethod
+        async def async_on_age_change(dog, old_value, new_value):
+            cb.on_age_change(dog, old_value, new_value)
+        @staticmethod
+        async def async_on_bark(dog, retval):
+            cb.on_bark(dog, retval)
+        @staticmethod
+        async def async_on_say(dog, retval, cmd):
+            cb.on_say(dog, retval, cmd)
+        @staticmethod
+        async def async_on_teach(dog, retval, cmd):
+            cb.on_teach(dog, retval, cmd)
     return cb
+
