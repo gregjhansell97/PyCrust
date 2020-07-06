@@ -81,8 +81,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Pynoculars'
-copyright = u'2019, gregjhansell97'
+project = u'pynoculars'
+copyright = u'2020, gregjhansell97'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -235,7 +235,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'user_guide.tex', u'Pynoculars Documentation',
+  ('index', 'user_guide.tex', u'pynoculars Documentation',
    u'gregjhansell97', 'manual'),
 ]
 

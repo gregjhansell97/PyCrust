@@ -5,10 +5,10 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = _build
+BUILDDIR      = ../build/sphinx/
 AUTODOCDIR    = api
 AUTODOCBUILD  = sphinx-apidoc
-PROJECT       = Pynoculars
+PROJECT       = pynoculars
 MODULEDIR     = ../src/pynoculars
 
 # User-friendly check for sphinx-build

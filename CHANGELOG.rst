@@ -2,8 +2,9 @@
 Changelog
 =========
 
-Version 0.0
+Version 0.1
 ===========
-- fresh start on pynoculars (originally called tiepy)
-- created skeleton
-- added initial tests and functionality
+
+- Feature A added
+- FIX: nasty bug #1729 fixed
+- add your changes here!

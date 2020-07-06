@@ -1,8 +1,8 @@
 ==========
-Pynoculars
+pynoculars
 ==========
 
-This is the documentation of **Pynoculars**.
+This is the documentation of **pynoculars**.
 
 .. note::
 

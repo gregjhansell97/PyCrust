@@ -12,6 +12,7 @@ __pycache__/*
 .cache/*
 .*.swp
 */.ipynb_checkpoints/*
+.DS_Store
 
 # Project files
 .ropeproject
@@ -47,8 +48,4 @@ MANIFEST
 
 # Per-project virtualenvs
 .venv*/
-*-env/
-env/
-
-# Costom ignores
-sandbox.py
+*-env*/
