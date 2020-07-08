@@ -18,15 +18,29 @@ __license__ = "mit"
 # def example():
 #     ...
 # may want to create a instance thats tied to f that stores everything.
+
+class ObservableFunction:
+    """
+    Agent description
+    """
+    def __init__(self, f):
+        self.func = f
+
+    def __call__(self, *args, **kwargs):
+        print("pre-processing")
+        self.func(*args, **kwargs)
+        print("post-processing")
+
+    def subscribe(self, callback, loop=None, executor=None):
+        """
+        Subscribe description
+        """
+        pass 
+    # TODO write unsubscribe code
+
 def observable(f):
     """
     Decorator description
     """
-    # need to attach information to the function
-    print("HERE")
-    def wrapper(*args, **kwargs):
-        print("pre-processing")
-        f(*args, **kwargs)
-        print("post-processing")
-    wrapper.attached_data = {}
-    return wrapper
+    return ObservableFunction(f)
+
