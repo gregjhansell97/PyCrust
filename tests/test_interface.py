@@ -38,14 +38,9 @@ class C:
     def method(self, arg, kwarg=None):
         return arg
 
-    @property
-    def prop(self):
-        return self._p
-
-    @prop.setter
-    def prop(self, p):
-        self._p = p
-
+    @observable
+    def other_method(self, arg, kwarg=None):
+        return arg
 
 def assert_valid_invocations(f):
     """
@@ -86,6 +81,7 @@ def test_basic_function_decoration():
 
 def test_basic_method_decoration():
     c = C()
+    C.method
     assert_valid_invocations(c.method)
 
 
@@ -114,16 +110,14 @@ def test_multiple_functions_function_decoration():
 def test_multiple_methods_method_decoration():
     # create several instances
     instances = [C() for _ in range(10)]
+    # check that accessing method gives you same method
+    for c in instances:
+        assert c.method is c.method
+    # compare two separate instances and their methods
+    for c1, c2 in zip(instances[0::2], instances[1::2]):
+        assert c1.method is not c2.method
+        assert c1.method != c2.method
+
     methods = [c.method for c in instances]
+    methods += [c.other_method for c in instances]
     assert_multiple_functions(methods)
-
-
-def test_property_decoration():
-    def callback(*args, **kwargs):
-        print(args)
-        print(kwargs)
-    c = C()
-    c.prop.subscribe(callback)
-    c.prop = 10
-
-    # TODO: write full testing impl
